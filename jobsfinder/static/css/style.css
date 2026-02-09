@@ -13,10 +13,12 @@
 
 .ms-footer {
   background-color: #202020;
+  font-size: 13px;
 }
 .ms-footer p {
   color: #7F7F7F;
   font-size: 13px;
+  margin-bottom: 0.5rem;
 }
 .ms-footer a:hover {
   color: #6ab43e;

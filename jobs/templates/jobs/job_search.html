@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-md-3 bg-light p-4">
+      <h4 class="mb-4">Filter Jobs</h4>
+      <form method="GET" action="{% url 'jobs.search' %}">
+        <div class="mb-3">
+          <label for="id_title" class="form-label">Job Title</label>
+          {{ template_data.form.title }}
+        </div>
+        <div class="mb-3">
+          <label for="id_skills" class="form-label">Skills</label>
+          {{ template_data.form.skills }}
+          <small class="form-text text-muted">Separate multiple skills with commas</small>
+        </div>
+        <div class="mb-3">
+          <label for="id_location" class="form-label">Location</label>
+          {{ template_data.form.location }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Salary Range</label>
+          <div class="row">
+            <div class="col-6">
+              {{ template_data.form.min_salary }}
+            </div>
+            <div class="col-6">
+              {{ template_data.form.max_salary }}
+            </div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="id_mode" class="form-label">Work Mode</label>
+          {{ template_data.form.mode }}
+        </div>
+        <div class="mb-3 form-check">
+          {{ template_data.form.visa_sponsorship }}
+          <label class="form-check-label" for="id_visa_sponsorship">
+            Visa Sponsorship Available
+          </label>
+        </div>
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">Search</button>
+          <a href="{% url 'jobs.search' %}" class="btn btn-secondary">Clear Filters</a>
+        </div>
+      </form>
+    </div>
+    <div class="col-md-9 p-4">
+      <h3 class="mb-3">Job Results ({{ template_data.job_count }})</h3>
+      {% if template_data.jobs %}
+        <div class="row">
+          {% for job in template_data.jobs %}
+            <div class="col-12 mb-3">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">{{ job.title }}</h5>
+                  <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
+                  <p class="card-text">
+                    <strong>Location:</strong> {{ job.location }}<br>
+                    <strong>Work Mode:</strong> {{ job.get_mode_display }}<br>
+                    {% if job.min_salary and job.max_salary %}
+                      <strong>Salary:</strong> ${{ job.min_salary|floatformat:2|intcomma }} - ${{ job.max_salary|floatformat:2|intcomma }}<br>
+                    {% endif %}
+                    <strong>Skills:</strong> {{ job.skills }}<br>
+                    <strong>Visa Sponsorship:</strong> {% if job.visa_sponsorship %}Yes{% else %}No{% endif %}<br>
+                    <strong>Posted:</strong> {{ job.posted_date|date:"M d, Y" }}
+                  </p>
+                  <p class="card-text">{{ job.description|truncatewords:30 }}</p>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="alert alert-info">
+          No jobs found matching your criteria. Try adjusting your filters.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock content %}
