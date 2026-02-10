@@ -35,3 +35,47 @@
 .ms-footer-bottom a:hover {
   color: #fff;
 }
+
+.profile-page {
+  max-width: 980px;
+}
+
+.profile-card {
+  background: #ffffff;
+  border: 1px solid #dce3e8;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.profile-headline {
+  font-weight: 500;
+  color: #15202b;
+}
+
+.timeline-item {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid #e9eef2;
+}
+
+.timeline-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.entry-card {
+  background: #f8fbff;
+  border: 1px solid #d6e5f0;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.preserve-lines {
+  white-space: pre-line;
+}
+
+@media (max-width: 767px) {
+  .profile-card {
+    padding: 1rem;
+  }
+}
