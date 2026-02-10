@@ -47,7 +47,12 @@
       </form>
     </div>
     <div class="col-md-9 p-4">
-      <h3 class="mb-3">Job Results ({{ template_data.job_count }})</h3>
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Job Results ({{ template_data.job_count }})</h3>
+        {% if template_data.can_post_jobs %}
+          <a class="btn btn-success" href="{% url 'jobs.create' %}">Post a Job</a>
+        {% endif %}
+      </div>
       {% if template_data.jobs %}
         <div class="row">
           {% for job in template_data.jobs %}

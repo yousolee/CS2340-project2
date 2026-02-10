@@ -9,12 +9,16 @@ User = get_user_model()
 
 @login_required
 def my_profile(request):
+    if hasattr(request.user, 'recruiter_profile'):
+        return redirect('accounts.dashboard')
     profile, _ = Profile.objects.get_or_create(user=request.user)
     template_data = {'title': 'My Profile', 'profile': profile}
     return render(request, 'profiles/my_profile.html', {'template_data': template_data})
 
 @login_required
 def edit_profile(request):
+    if hasattr(request.user, 'recruiter_profile'):
+        return redirect('accounts.dashboard')
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':

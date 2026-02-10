@@ -1,15 +1,27 @@
-from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
+from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
+from accounts.models import Recruiter
 from .models import Job
-from .forms import JobSearchForm
+from .forms import JobSearchForm, JobCreateForm
 
 
 
 # Create your views here.
+def get_recruiter(user):
+    if not user.is_authenticated:
+        return None
+    try:
+        return user.recruiter_profile
+    except Recruiter.DoesNotExist:
+        return None
+
 
 def job_search(request):
     template_data = {}
     template_data['title'] = 'Search Jobs - JobsFinder'
+    template_data['can_post_jobs'] = get_recruiter(request.user) is not None
     
     if request.method == 'GET':
         form = JobSearchForm(request.GET)
@@ -48,18 +60,63 @@ def job_search(request):
         return render(request, 'jobs/job_search.html', {'template_data': template_data})
     
 def job_list(request):
+    recruiter = get_recruiter(request.user)
     template_data = {
         'title': 'Job Listings - JobsFinder',
         'jobs' : Job.objects.all(),
+        'can_post_jobs': recruiter is not None,
     }
     template_data['job_count'] = template_data['jobs'].count()
     return render(request, 'jobs/job_list.html', {'template_data': template_data})
 
 def job_detail(request, job_id):
 
+    recruiter = get_recruiter(request.user)
     job = get_object_or_404(Job, pk=job_id)
     template_data = {
         'title': f"{job.title} - JobsFinder",
         'job': job,
+        'can_post_jobs': recruiter is not None,
     }
     return render(request, 'jobs/job_detail.html', {'template_data': template_data})
+
+
+@login_required
+def create_job(request):
+    recruiter = get_recruiter(request.user)
+    if recruiter is None:
+        return HttpResponseForbidden('Only recruiter accounts can create job postings.')
+
+    template_data = {
+        'title': 'Create Job Posting - JobsFinder',
+        'can_post_jobs': True,
+    }
+
+    if request.method == 'POST':
+        form = JobCreateForm(request.POST)
+        if form.is_valid():
+            job = form.save(commit=False)
+            job.posted_by = recruiter
+            job.save()
+            return redirect('jobs.detail', job_id=job.id)
+    else:
+        form = JobCreateForm(initial={'company': recruiter.company_name})
+
+    template_data['form'] = form
+    return render(request, 'jobs/job_create.html', {'template_data': template_data})
+
+
+@login_required
+def my_postings(request):
+    recruiter = get_recruiter(request.user)
+    if recruiter is None:
+        return HttpResponseForbidden('Only recruiter accounts can view recruiter postings.')
+
+    jobs = Job.objects.filter(posted_by=recruiter)
+    template_data = {
+        'title': 'My Job Postings - JobsFinder',
+        'jobs': jobs,
+        'job_count': jobs.count(),
+        'can_post_jobs': True,
+    }
+    return render(request, 'jobs/my_postings.html', {'template_data': template_data})

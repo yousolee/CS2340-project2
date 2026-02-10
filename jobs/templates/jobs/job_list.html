@@ -9,6 +9,9 @@
       <div class="text-muted">{{ template_data.job_count }} result{{ template_data.job_count|pluralize }}</div>
     </div>
     <div>
+      {% if template_data.can_post_jobs %}
+        <a class="btn btn-success me-2" href="{% url 'jobs.create' %}">Post a Job</a>
+      {% endif %}
       <a class="btn btn-primary" href="{% url 'jobs.search' %}">Filter / Search</a>
     </div>
   </div>

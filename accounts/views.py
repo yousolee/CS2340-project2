@@ -2,7 +2,13 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 
+from jobs.models import Job
 from .forms import CustomUserCreationForm, CustomErrorList
+
+
+def is_recruiter(user):
+    return user.is_authenticated and hasattr(user, 'recruiter_profile')
+
 
 def signup(request):
     template_data = {}
@@ -17,11 +23,8 @@ def signup(request):
         if form.is_valid():
             user = form.save()
 
-            # ✅ Log them in immediately so they can access /profiles/me/edit/
             auth_login(request, user)
-
-            # ✅ Send them directly to create their profile
-            return redirect('profiles.edit')
+            return redirect('accounts.dashboard')
         else:
             template_data['form'] = form
             return render(request, 'accounts/signup.html', {'template_data': template_data})
@@ -45,7 +48,25 @@ def login(request):
             return render(request, 'accounts/login.html', {'template_data': template_data})
         else:
             auth_login(request, user)
-            return redirect('profiles.me')  # or 'home.index'
+            return redirect('accounts.dashboard')
+
+
+@login_required
+def dashboard(request):
+    if is_recruiter(request.user):
+        recruiter = request.user.recruiter_profile
+        posted_jobs = Job.objects.filter(posted_by=recruiter)
+        template_data = {
+            'title': 'Recruiter Dashboard',
+            'posted_jobs_count': posted_jobs.count(),
+            'recent_jobs': posted_jobs[:5],
+        }
+        return render(request, 'accounts/recruiter_dashboard.html', {'template_data': template_data})
+
+    template_data = {
+        'title': 'Job Seeker Dashboard',
+    }
+    return render(request, 'accounts/job_seeker_dashboard.html', {'template_data': template_data})
 
 
 @login_required

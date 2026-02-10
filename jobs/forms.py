@@ -1,5 +1,8 @@
 from django import forms
 
+from .models import Job
+
+
 class JobSearchForm(forms.Form):
     title = forms.CharField(required=False)
     skills = forms.CharField(required=False)
@@ -24,4 +27,35 @@ class JobSearchForm(forms.Form):
         self.fields['min_salary'].widget.attrs.update({'placeholder': 'Min salary'})
         self.fields['max_salary'].widget.attrs.update({'placeholder': 'Max salary'})
         self.fields['mode'].widget.attrs.update({'class': 'form-select'})        
+        self.fields['visa_sponsorship'].widget.attrs.update({'class': 'form-check-input'})
+
+
+class JobCreateForm(forms.ModelForm):
+    class Meta:
+        model = Job
+        fields = [
+            'title',
+            'company',
+            'location',
+            'description',
+            'skills',
+            'min_salary',
+            'max_salary',
+            'mode',
+            'visa_sponsorship',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super(JobCreateForm, self).__init__(*args, **kwargs)
+        for fieldname in [
+            'title',
+            'company',
+            'location',
+            'description',
+            'skills',
+            'min_salary',
+            'max_salary',
+        ]:
+            self.fields[fieldname].widget.attrs.update({'class': 'form-control'})
+        self.fields['mode'].widget.attrs.update({'class': 'form-select'})
         self.fields['visa_sponsorship'].widget.attrs.update({'class': 'form-check-input'})
