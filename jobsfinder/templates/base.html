@@ -37,8 +37,19 @@
         <div class="collapse navbar-collapse"
              id="navbarNavAltMarkup">
           <div class="navbar-nav ms-auto navbar-ml">
-            <a class="nav-link"
-               href="{% url 'home.about' %}">About</a>
+            <a class="nav-link" href="{% url 'jobs.list' %}">Jobs</a>
+            <a class="nav-link" href="{% url 'home.about' %}">About</a>
+          <div class="vr bg-white mx-2 d-none d-lg-block"></div>
+          {% if user.is_authenticated %}
+            <a class="nav-link" href="{% url 'profiles.me' %}">My Profile</a>
+            <a class="nav-link" href="{% url 'accounts.logout' %}">
+            Logout ({{ user.username }})
+            </a>
+          {% else %}
+            <a class="nav-link" href="{% url 'accounts.login' %}">Login</a>
+            <a class="nav-link" href="{% url 'accounts.signup' %}">Sign Up</a>
+          {% endif %}
+          </div>
           </div>
         </div>
       </div>
@@ -67,6 +78,13 @@
                mx-auto mb-4">
             <b>LINKS</b>
             <hr />
+            <p><a class="nav-link"
+              href="{% url 'jobs.list' %}">
+              Jobs
+            </a></p>
+            {% if user.is_authenticated %}
+          <a class="nav-link" href="{% url 'profiles.me' %}">My Profile</a>
+          {% endif %}
             <p><a class="nav-link"
               href="{% url 'home.about' %}">
               About

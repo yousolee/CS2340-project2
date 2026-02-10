@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <a class="text-decoration-none" href="{% url 'jobs.list' %}">&larr; Back to all jobs</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-start">
+        <div>
+          <h3 class="mb-1">{{ template_data.job.title }}</h3>
+          <div class="text-muted">{{ template_data.job.company }}</div>
+        </div>
+        <div class="text-muted">{{ template_data.job.posted_date|date:"M d, Y" }}</div>
+      </div>
+
+      <hr />
+
+      <p class="mb-2"><strong>Location:</strong> {{ template_data.job.location }}</p>
+      <p class="mb-2"><strong>Work Mode:</strong> {{ template_data.job.get_mode_display }}</p>
+      {% if template_data.job.min_salary and template_data.job.max_salary %}
+        <p class="mb-2"><strong>Salary:</strong>
+          ${{ template_data.job.min_salary|floatformat:2|intcomma }} - ${{ template_data.job.max_salary|floatformat:2|intcomma }}
+        </p>
+      {% endif %}
+      <p class="mb-2"><strong>Skills:</strong> {{ template_data.job.skills }}</p>
+      <p class="mb-3"><strong>Visa Sponsorship:</strong> {% if template_data.job.visa_sponsorship %}Yes{% else %}No{% endif %}</p>
+
+      <h5>Description</h5>
+      <p class="mb-0">{{ template_data.job.description }}</p>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <a class="btn btn-outline-primary" href="{% url 'jobs.search' %}">Filter / Search</a>
+  </div>
+</div>
+{% endblock content %}

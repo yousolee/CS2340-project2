@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">All Jobs</h3>
+      <div class="text-muted">{{ template_data.job_count }} result{{ template_data.job_count|pluralize }}</div>
+    </div>
+    <div>
+      <a class="btn btn-primary" href="{% url 'jobs.search' %}">Filter / Search</a>
+    </div>
+  </div>
+
+  {% if template_data.jobs %}
+    <div class="row">
+      {% for job in template_data.jobs %}
+        <div class="col-12 mb-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h5 class="card-title mb-1">
+                    <a class="text-decoration-none" href="{% url 'jobs.detail' job.id %}">
+                      {{ job.title }}
+                    </a>
+                  </h5>
+                  <div class="text-muted">{{ job.company }}</div>
+                </div>
+                <div class="text-muted small">{{ job.posted_date|date:"M d, Y" }}</div>
+              </div>
+
+              <div class="mt-2">
+                <span class="me-3"><strong>Location:</strong> {{ job.location }}</span>
+                <span class="me-3"><strong>Mode:</strong> {{ job.get_mode_display }}</span>
+                {% if job.min_salary and job.max_salary %}
+                  <span class="me-3"><strong>Salary:</strong> ${{ job.min_salary|floatformat:2|intcomma }} - ${{ job.max_salary|floatformat:2|intcomma }}</span>
+                {% endif %}
+                <span><strong>Visa:</strong> {% if job.visa_sponsorship %}Yes{% else %}No{% endif %}</span>
+              </div>
+
+              <p class="card-text mt-3 mb-0">{{ job.description|truncatewords:30 }}</p>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">No jobs have been posted yet.</div>
+  {% endif %}
+</div>
+{% endblock content %}

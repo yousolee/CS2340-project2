@@ -54,7 +54,11 @@
             <div class="col-12 mb-3">
               <div class="card">
                 <div class="card-body">
-                  <h5 class="card-title">{{ job.title }}</h5>
+                  <h5 class="card-title">
+                    <a class="text-decoration-none" href="{% url 'jobs.detail' job.id %}">
+                      {{ job.title }}
+                    </a>
+                  </h5>
                   <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
                   <p class="card-text">
                     <strong>Location:</strong> {{ job.location }}<br>

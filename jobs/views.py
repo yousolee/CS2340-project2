@@ -1,7 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.db.models import Q
 from .models import Job
 from .forms import JobSearchForm
+
 
 
 # Create your views here.
@@ -45,3 +46,20 @@ def job_search(request):
         template_data['jobs'] = jobs
         template_data['job_count'] = jobs.count()
         return render(request, 'jobs/job_search.html', {'template_data': template_data})
+    
+def job_list(request):
+    template_data = {
+        'title': 'Job Listings - JobsFinder',
+        'jobs' : Job.objects.all(),
+    }
+    template_data['job_count'] = template_data['jobs'].count()
+    return render(request, 'jobs/job_list.html', {'template_data': template_data})
+
+def job_detail(request, job_id):
+
+    job = get_object_or_404(Job, pk=job_id)
+    template_data = {
+        'title': f"{job.title} - JobsFinder",
+        'job': job,
+    }
+    return render(request, 'jobs/job_detail.html', {'template_data': template_data})
