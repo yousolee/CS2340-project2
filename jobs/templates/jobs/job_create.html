@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3 class="mb-3">Create Job Posting</h3>
+          <form method="POST">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="{{ template_data.form.title.id_for_label }}" class="form-label">Title</label>
+              {{ template_data.form.title }}
+              {{ template_data.form.title.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ template_data.form.company.id_for_label }}" class="form-label">Company</label>
+              {{ template_data.form.company }}
+              {{ template_data.form.company.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ template_data.form.location.id_for_label }}" class="form-label">Location</label>
+              {{ template_data.form.location }}
+              {{ template_data.form.location.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ template_data.form.description.id_for_label }}" class="form-label">Description</label>
+              {{ template_data.form.description }}
+              {{ template_data.form.description.errors }}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ template_data.form.skills.id_for_label }}" class="form-label">Skills</label>
+              {{ template_data.form.skills }}
+              {{ template_data.form.skills.errors }}
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ template_data.form.min_salary.id_for_label }}" class="form-label">Min Salary</label>
+                {{ template_data.form.min_salary }}
+                {{ template_data.form.min_salary.errors }}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="{{ template_data.form.max_salary.id_for_label }}" class="form-label">Max Salary</label>
+                {{ template_data.form.max_salary }}
+                {{ template_data.form.max_salary.errors }}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ template_data.form.mode.id_for_label }}" class="form-label">Work Mode</label>
+              {{ template_data.form.mode }}
+              {{ template_data.form.mode.errors }}
+            </div>
+
+            <div class="mb-3 form-check">
+              {{ template_data.form.visa_sponsorship }}
+              <label class="form-check-label" for="{{ template_data.form.visa_sponsorship.id_for_label }}">
+                Visa Sponsorship Available
+              </label>
+              {{ template_data.form.visa_sponsorship.errors }}
+            </div>
+
+            {% if template_data.form.errors %}
+              <div class="alert alert-danger">
+                Please fix the highlighted errors and try again.
+              </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-success">Create Job</button>
+            <a href="{% url 'jobs.list' %}" class="btn btn-outline-secondary">Cancel</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

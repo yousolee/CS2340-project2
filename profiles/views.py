@@ -33,6 +33,8 @@ PROFILE_SECTION_FORMS = {
 
 @login_required
 def my_profile(request):
+    if hasattr(request.user, 'recruiter_profile'):
+        return redirect('accounts.dashboard')
     profile, _ = Profile.objects.get_or_create(user=request.user)
     template_data = {
         "title": "My Profile",
@@ -44,6 +46,8 @@ def my_profile(request):
 
 @login_required
 def edit_profile(request):
+    if hasattr(request.user, 'recruiter_profile'):
+        return redirect('accounts.dashboard')
     return redirect("profiles.edit_section", section="basic")
 
 

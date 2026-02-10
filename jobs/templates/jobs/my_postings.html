@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">My Job Postings</h3>
+      <div class="text-muted">{{ template_data.job_count }} posting{{ template_data.job_count|pluralize }}</div>
+    </div>
+    <a class="btn btn-success" href="{% url 'jobs.create' %}">Post a Job</a>
+  </div>
+
+  {% if template_data.jobs %}
+    <div class="row">
+      {% for job in template_data.jobs %}
+        <div class="col-12 mb-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h5 class="card-title mb-1">
+                    <a class="text-decoration-none" href="{% url 'jobs.detail' job.id %}">
+                      {{ job.title }}
+                    </a>
+                  </h5>
+                  <div class="text-muted">{{ job.company }}</div>
+                </div>
+                <div class="text-muted small">{{ job.posted_date|date:"M d, Y" }}</div>
+              </div>
+              <p class="card-text mt-3 mb-0">{{ job.description|truncatewords:30 }}</p>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">You have not posted any jobs yet.</div>
+  {% endif %}
+</div>
+{% endblock content %}
