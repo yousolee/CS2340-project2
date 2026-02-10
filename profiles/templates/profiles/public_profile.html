@@ -1,29 +1,92 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container py-4">
-  <h3>{{ template_data.profile_user.get_full_name|default:template_data.profile_user.username }}</h3>
-  <p class="text-muted">@{{ template_data.profile_user.username }}</p>
-  <hr />
-
-  <h5>Headline</h5>
-  <p>{{ template_data.profile.headline|default:"" }}</p>
-
-  <h5>Skills</h5>
-  <pre class="bg-light p-3 rounded">{{ template_data.profile.skills|default:"" }}</pre>
-
-  <h5>Education</h5>
-  <pre class="bg-light p-3 rounded">{{ template_data.profile.education|default:"" }}</pre>
-
-  <h5>Work Experience</h5>
-  <pre class="bg-light p-3 rounded">{{ template_data.profile.work_experience|default:"" }}</pre>
-
-  <h5>Links</h5>
-  <div class="bg-light p-3 rounded">
-    {% for line in template_data.profile.links.splitlines %}
-      {% if line %}
-        <div><a href="{{ line }}" target="_blank">{{ line }}</a></div>
-      {% endif %}
-    {% endfor %}
+<div class="container py-4 profile-page">
+  <div class="profile-card mb-4">
+    <h3 class="mb-1">{{ template_data.profile_user.get_full_name|default:template_data.profile_user.username }}</h3>
+    <p class="text-muted mb-2">@{{ template_data.profile_user.username }}</p>
+    <p class="mb-1 profile-headline">{{ template_data.profile.headline|default:"" }}</p>
+    <p class="text-muted mb-0">{{ template_data.profile.location|default:"" }}</p>
   </div>
+
+  {% if template_data.profile.summary %}
+    <div class="profile-card mb-4">
+      <h5>About</h5>
+      <p class="mb-0 preserve-lines">{{ template_data.profile.summary }}</p>
+    </div>
+  {% endif %}
+
+  {% if template_data.profile.skills %}
+    <div class="profile-card mb-4">
+      <h5>Skills</h5>
+      <p class="mb-0 preserve-lines">{{ template_data.profile.skills }}</p>
+    </div>
+  {% endif %}
+
+  {% if template_data.experiences %}
+    <div class="profile-card mb-4">
+      <h5>Experience</h5>
+      {% for experience in template_data.experiences %}
+        <div class="timeline-item">
+          <h6 class="mb-1">{{ experience.title }}</h6>
+          <p class="mb-1 text-muted">
+            {{ experience.company }}
+            {% if experience.employment_type %} · {{ experience.get_employment_type_display }}{% endif %}
+          </p>
+          <p class="mb-1 text-muted small">
+            {{ experience.start_date|date:"M Y" }} -
+            {% if experience.is_current %}Present{% elif experience.end_date %}{{ experience.end_date|date:"M Y" }}{% else %}Present{% endif %}
+            {% if experience.location %} · {{ experience.location }}{% endif %}
+            {% if experience.location_type %} · {{ experience.get_location_type_display }}{% endif %}
+          </p>
+          {% if experience.description %}
+            <p class="mb-1 preserve-lines">{{ experience.description }}</p>
+          {% endif %}
+          {% if experience.activities %}
+            <p class="mb-0 text-muted preserve-lines"><strong>Activities:</strong> {{ experience.activities }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if template_data.educations %}
+    <div class="profile-card mb-4">
+      <h5>Education</h5>
+      {% for education in template_data.educations %}
+        <div class="timeline-item">
+          <h6 class="mb-1">{{ education.school }}</h6>
+          <p class="mb-1 text-muted">
+            {{ education.degree }}{% if education.field_of_study %}, {{ education.field_of_study }}{% endif %}
+          </p>
+          <p class="mb-1 text-muted small">
+            {% if education.start_date %}{{ education.start_date|date:"M Y" }}{% endif %}
+            {% if education.start_date or education.end_date or education.is_current %} - {% endif %}
+            {% if education.is_current %}Present{% elif education.end_date %}{{ education.end_date|date:"M Y" }}{% endif %}
+            {% if education.enrollment_type %} · {{ education.get_enrollment_type_display }}{% endif %}
+            {% if education.grade %} · Grade: {{ education.grade }}{% endif %}
+          </p>
+          {% if education.description %}
+            <p class="mb-1 preserve-lines">{{ education.description }}</p>
+          {% endif %}
+          {% if education.activities %}
+            <p class="mb-0 text-muted preserve-lines"><strong>Activities:</strong> {{ education.activities }}</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if template_data.profile.links %}
+    <div class="profile-card">
+      <h5>Links</h5>
+      <div>
+        {% for line in template_data.profile.links.splitlines %}
+          {% if line %}
+            <div><a href="{{ line }}" target="_blank">{{ line }}</a></div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
 </div>
 {% endblock content %}
