@@ -18,7 +18,7 @@ def get_recruiter(user):
         return None
 
 
-def job_search(request):
+def job_list(request):
     template_data = {}
     template_data['title'] = 'Search Jobs - JobsFinder'
     template_data['can_post_jobs'] = get_recruiter(request.user) is not None
@@ -57,17 +57,7 @@ def job_search(request):
         template_data['form'] = form
         template_data['jobs'] = jobs
         template_data['job_count'] = jobs.count()
-        return render(request, 'jobs/job_search.html', {'template_data': template_data})
-    
-def job_list(request):
-    recruiter = get_recruiter(request.user)
-    template_data = {
-        'title': 'Job Listings - JobsFinder',
-        'jobs' : Job.objects.all(),
-        'can_post_jobs': recruiter is not None,
-    }
-    template_data['job_count'] = template_data['jobs'].count()
-    return render(request, 'jobs/job_list.html', {'template_data': template_data})
+        return render(request, 'jobs/job_list.html', {'template_data': template_data})
 
 def job_detail(request, job_id):
 

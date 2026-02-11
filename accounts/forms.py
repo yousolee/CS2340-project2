@@ -50,3 +50,20 @@ class CustomUserCreationForm(UserCreationForm):
             )
 
         return user
+    
+class CandidateSearchForm(forms.Form):
+    skills = forms.CharField(required=False)
+    location = forms.CharField(required=False)
+    company = forms.CharField(required=False)
+    job_title = forms.CharField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(CandidateSearchForm, self).__init__(*args, **kwargs)
+
+        for fieldname in ['skills', 'location', 'company', 'job_title']:
+            self.fields[fieldname].widget.attrs.update({'class': 'form-control'})
+        
+        self.fields['skills'].widget.attrs.update({'placeholder': 'Skills (e.g. Python, Django)'})
+        self.fields['location'].widget.attrs.update({'placeholder': 'Location'})
+        self.fields['company'].widget.attrs.update({'placeholder': 'Company'})
+        self.fields['job_title'].widget.attrs.update({'placeholder': 'Job Title'})
