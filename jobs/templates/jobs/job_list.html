@@ -12,7 +12,9 @@
       {% if template_data.can_post_jobs %}
         <a class="btn btn-success me-2" href="{% url 'jobs.create' %}">Post a Job</a>
       {% endif %}
-      <a class="btn btn-primary" href="{% url 'jobs.search' %}">Filter / Search</a>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+          <i class="fas fa-filter me-2"></i>Filter / Search
+        </button>    
     </div>
   </div>
 
@@ -52,5 +54,62 @@
   {% else %}
     <div class="alert alert-info">No jobs have been posted yet.</div>
   {% endif %}
+</div>
+<div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="filterModalLabel">Filter Jobs</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="GET" action="">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="id_title" class="form-label">Job Title</label>
+            <input type="text" name="title" class="form-control" placeholder="Job title..." value="{{ request.GET.title }}">
+          </div>
+          <div class="mb-3">
+            <label for="id_skills" class="form-label">Skills</label>
+            <input type="text" name="skills" class="form-control" placeholder="Skills (e.g., Python, Django)..." value="{{ request.GET.skills }}">
+            <small class="form-text text-muted">Separate multiple skills with commas</small>
+          </div>
+          <div class="mb-3">
+            <label for="id_location" class="form-label">Location</label>
+            <input type="text" name="location" class="form-control" placeholder="Location..." value="{{ request.GET.location }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Salary Range</label>
+            <div class="row">
+              <div class="col-6">
+                <input type="number" name="min_salary" class="form-control" placeholder="Min salary" value="{{ request.GET.min_salary }}">
+              </div>
+              <div class="col-6">
+                <input type="number" name="max_salary" class="form-control" placeholder="Max salary" value="{{ request.GET.max_salary }}">
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="id_mode" class="form-label">Work Mode</label>
+            <select name="mode" class="form-select">
+              <option value="">Any</option>
+              <option value="remote" {% if request.GET.mode == 'remote' %}selected{% endif %}>Remote</option>
+              <option value="onsite" {% if request.GET.mode == 'onsite' %}selected{% endif %}>On-Site</option>
+              <option value="hybrid" {% if request.GET.mode == 'hybrid' %}selected{% endif %}>Hybrid</option>
+            </select>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" name="visa_sponsorship" class="form-check-input" id="id_visa_sponsorship" {% if request.GET.visa_sponsorship %}checked{% endif %}>
+            <label class="form-check-label" for="id_visa_sponsorship">
+              Visa Sponsorship Available
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <a href="{% url 'jobs.list' %}" class="btn btn-secondary">Clear Filters</a>
+          <button type="submit" class="btn btn-primary">Apply Filters</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock content %}

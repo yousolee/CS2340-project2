@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q
+from profiles.models import Profile, Experience
+from .forms import CandidateSearchForm
 
 from jobs.models import Job
 from .forms import CustomUserCreationForm, CustomErrorList
@@ -73,3 +76,36 @@ def dashboard(request):
 def logout(request):
     auth_logout(request)
     return redirect('home.index')
+
+@login_required
+@user_passes_test(is_recruiter)
+def candidate_search(request):
+    template_data = {}
+    template_data['title'] = 'Candidate Search'
+
+    if request.method == 'GET':
+        form = CandidateSearchForm(request.GET)
+        profiles = Profile.objects.filter(user__recruiter_profile__isnull=True).select_related('user')
+
+        if form.is_valid():
+            if form.cleaned_data.get('skills'):
+                skills_list = [skill.strip() for skill in form.cleaned_data['skills'].split(',')]
+                skill_query = Q()
+                for skill in skills_list:
+                    skill_query |= Q(skills__icontains=skill)
+                profiles = profiles.filter(skill_query)
+            
+            if form.cleaned_data.get('location'):
+                profiles = profiles.filter(location__icontains=form.cleaned_data['location'])
+            
+            if form.cleaned_data.get('company'):
+                profiles = profiles.filter(experiences__company__icontains=form.cleaned_data['company']).distinct()
+            
+            if form.cleaned_data.get('job_title'):
+                profiles = profiles.filter(experiences__job_title__icontains=form.cleaned_data['job_title']).distinct()
+            
+            template_data['form'] = form
+            template_data['profiles'] = profiles
+            template_data['profile_count'] = profiles.count()
+            return render(request, 'accounts/candidate_search.html', {'template_data': template_data})
+    
