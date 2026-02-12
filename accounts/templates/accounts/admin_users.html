@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">User Management</h3>
+      <p class="text-muted mb-0">Manage user accounts and roles.</p>
+    </div>
+    <a class="btn btn-secondary" href="{% url 'accounts.admin_dashboard' %}">
+      <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+    </a>
+  </div>
+  <hr />
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead class="table-light">
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Joined</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in template_data.users_with_roles %}
+          <tr>
+            <td>{{ item.user.username }}</td>
+            <td>{{ item.user.email }}</td>
+            <td>{{ item.user.first_name }} {{ item.user.last_name }}</td>
+            <td>
+              <span class="badge
+                {% if item.role == 'Administrator' %}bg-danger
+                {% elif item.role == 'Recruiter' %}bg-primary
+                {% elif item.role == 'Job Seeker' %}bg-success
+                {% else %}bg-secondary
+                {% endif %}">
+                {{ item.role }}
+              </span>
+            </td>
+            <td>
+              {% if item.user.is_active %}
+                <span class="badge bg-success">Active</span>
+              {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td>{{ item.user.date_joined|date:"M d, Y" }}</td>
+            <td>
+              {% if not item.user.is_superuser %}
+                <form method="POST" action="{% url 'accounts.admin_toggle_user' item.user.id %}" style="display: inline;">
+                  {% csrf_token %}
+                  {% if item.user.is_active %}
+                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Deactivate this user?')">
+                      Deactivate
+                    </button>
+                  {% else %}
+                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Activate this user?')">
+                      Activate
+                    </button>
+                  {% endif %}
+                </form>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock content %}

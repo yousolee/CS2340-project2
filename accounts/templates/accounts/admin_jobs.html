@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">Job Moderation</h3>
+      <p class="text-muted mb-0">Review and moderate job postings.</p>
+    </div>
+    <a class="btn btn-secondary" href="{% url 'accounts.admin_dashboard' %}">
+      <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+    </a>
+  </div>
+  <hr />
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if template_data.jobs %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Job Title</th>
+            <th>Company</th>
+            <th>Location</th>
+            <th>Mode</th>
+            <th>Posted By</th>
+            <th>Posted Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in template_data.jobs %}
+            <tr>
+              <td>
+                <a href="{% url 'jobs.detail' job.id %}" class="text-decoration-none">
+                  {{ job.title }}
+                </a>
+              </td>
+              <td>{{ job.company }}</td>
+              <td>{{ job.location }}</td>
+              <td>
+                <span class="badge
+                  {% if job.mode == 'remote' %}bg-info
+                  {% elif job.mode == 'onsite' %}bg-primary
+                  {% else %}bg-secondary
+                  {% endif %}">
+                  {{ job.get_mode_display }}
+                </span>
+              </td>
+              <td>
+                {% if job.posted_by %}
+                  {{ job.posted_by.user.username }}
+                {% else %}
+                  <span class="text-muted">Unknown</span>
+                {% endif %}
+              </td>
+              <td>{{ job.posted_date|date:"M d, Y" }}</td>
+              <td>
+                <a href="{% url 'jobs.detail' job.id %}" class="btn btn-sm btn-primary me-1">
+                  View
+                </a>
+                <form method="POST" action="{% url 'accounts.admin_delete_job' job.id %}" style="display: inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this job posting? This action cannot be undone.')">
+                    Delete
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info">No job postings found.</div>
+  {% endif %}
+</div>
+{% endblock content %}

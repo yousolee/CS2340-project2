@@ -1,16 +1,24 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Q
+from django.contrib.auth.models import User
+from django.contrib import messages
+from django.db.models import Q, Count
 from profiles.models import Profile, Experience
 from .forms import CandidateSearchForm
-
+from .models import Recruiter
 from jobs.models import Job
 from .forms import CustomUserCreationForm, CustomErrorList
+import csv
+from django.http import HttpResponse
 
 
 def is_recruiter(user):
     return user.is_authenticated and hasattr(user, 'recruiter_profile')
+
+
+def is_admin(user):
+    return user.is_authenticated and (user.is_staff or user.is_superuser)
 
 
 def signup(request):
@@ -41,10 +49,22 @@ def login(request):
         return render(request, 'accounts/login.html', {'template_data': template_data})
 
     elif request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        # Check if user exists and is inactive
+        try:
+            existing_user = User.objects.get(username=username)
+            if not existing_user.is_active:
+                template_data['error'] = 'Your account has been deactivated. Please contact an administrator.'
+                return render(request, 'accounts/login.html', {'template_data': template_data})
+        except User.DoesNotExist:
+            pass  # Will handle in authenticate below
+
         user = authenticate(
             request,
-            username=request.POST.get('username'),
-            password=request.POST.get('password')
+            username=username,
+            password=password
         )
         if user is None:
             template_data['error'] = 'The username or password is incorrect.'
@@ -108,4 +128,133 @@ def candidate_search(request):
             template_data['profiles'] = profiles
             template_data['profile_count'] = profiles.count()
             return render(request, 'accounts/candidate_search.html', {'template_data': template_data})
-    
+
+
+# ============= ADMIN DASHBOARD VIEWS =============
+
+@login_required
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    """Main admin dashboard with statistics"""
+    total_users = User.objects.count()
+    total_recruiters = Recruiter.objects.count()
+    total_job_seekers = Profile.objects.count()
+    total_jobs = Job.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+    inactive_users = User.objects.filter(is_active=False).count()
+
+    template_data = {
+        'title': 'Admin Dashboard',
+        'total_users': total_users,
+        'total_recruiters': total_recruiters,
+        'total_job_seekers': total_job_seekers,
+        'total_jobs': total_jobs,
+        'active_users': active_users,
+        'inactive_users': inactive_users,
+    }
+    return render(request, 'accounts/admin_dashboard.html', {'template_data': template_data})
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_users(request):
+    """User management page"""
+    users = User.objects.all().select_related('recruiter_profile', 'profile').order_by('-date_joined')
+
+    # Add role to each user
+    users_with_roles = []
+    for user in users:
+        if user.is_superuser:
+            role = 'Administrator'
+        elif hasattr(user, 'recruiter_profile'):
+            role = 'Recruiter'
+        elif hasattr(user, 'profile'):
+            role = 'Job Seeker'
+        else:
+            role = 'No Role'
+
+        users_with_roles.append({
+            'user': user,
+            'role': role,
+        })
+
+    template_data = {
+        'title': 'User Management',
+        'users_with_roles': users_with_roles,
+    }
+    return render(request, 'accounts/admin_users.html', {'template_data': template_data})
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_toggle_user(request, user_id):
+    """Toggle user active status"""
+    if request.method == 'POST':
+        user = User.objects.get(id=user_id)
+        user.is_active = not user.is_active
+        user.save()
+
+        status = 'activated' if user.is_active else 'deactivated'
+        messages.success(request, f'User {user.username} has been {status}.')
+
+    return redirect('accounts.admin_users')
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_jobs(request):
+    """Job moderation page"""
+    jobs = Job.objects.all().select_related('posted_by__user').order_by('-posted_date')
+
+    template_data = {
+        'title': 'Job Moderation',
+        'jobs': jobs,
+    }
+    return render(request, 'accounts/admin_jobs.html', {'template_data': template_data})
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_delete_job(request, job_id):
+    """Delete a job post"""
+    if request.method == 'POST':
+        job = Job.objects.get(id=job_id)
+        job_title = job.title
+        job.delete()
+        messages.success(request, f'Job posting "{job_title}" has been removed.')
+
+    return redirect('accounts.admin_jobs')
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_export_users(request):
+    """Export users to CSV"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="users_export.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Username', 'Email', 'First Name', 'Last Name', 'Role', 'Active', 'Date Joined'])
+
+    users = User.objects.all().select_related('recruiter_profile', 'profile')
+    for user in users:
+        if user.is_superuser:
+            role = 'Administrator'
+        elif hasattr(user, 'recruiter_profile'):
+            role = 'Recruiter'
+        elif hasattr(user, 'profile'):
+            role = 'Job Seeker'
+        else:
+            role = 'No Role'
+
+        writer.writerow([
+            user.username,
+            user.email,
+            user.first_name,
+            user.last_name,
+            role,
+            user.is_active,
+            user.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+        ])
+
+    return response
