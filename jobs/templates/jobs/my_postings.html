@@ -29,6 +29,9 @@
                 <div class="text-muted small">{{ job.posted_date|date:"M d, Y" }}</div>
               </div>
               <p class="card-text mt-3 mb-0">{{ job.description|truncatewords:30 }}</p>
+              <div class="mt-3">
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'jobs.edit' job.id %}">Edit</a>
+              </div>
             </div>
           </div>
         </div>

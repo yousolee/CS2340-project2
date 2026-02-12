@@ -4,9 +4,9 @@
 <div class="container py-4">
   <div class="row justify-content-center">
     <div class="col-lg-8">
-      <div class="card shadow-sm">
+        <div class="card shadow-sm">
         <div class="card-body">
-          <h3 class="mb-3">Create Job Posting</h3>
+          <h3 class="mb-3">{{ template_data.form_heading|default:"Create Job Posting" }}</h3>
           <form method="POST">
             {% csrf_token %}
 
@@ -73,8 +73,12 @@
               </div>
             {% endif %}
 
-            <button type="submit" class="btn btn-success">Create Job</button>
-            <a href="{% url 'jobs.list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-success">{{ template_data.submit_label|default:"Create Job" }}</button>
+            {% if template_data.cancel_to_job %}
+              <a href="{% url 'jobs.detail' template_data.job_id %}" class="btn btn-outline-secondary">Cancel</a>
+            {% else %}
+              <a href="{% url 'jobs.list' %}" class="btn btn-outline-secondary">Cancel</a>
+            {% endif %}
           </form>
         </div>
       </div>

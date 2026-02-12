@@ -67,6 +67,7 @@ def job_detail(request, job_id):
         'title': f"{job.title} - JobsFinder",
         'job': job,
         'can_post_jobs': recruiter is not None,
+        'can_edit_job': recruiter is not None and job.posted_by_id == recruiter.id,
     }
     return render(request, 'jobs/job_detail.html', {'template_data': template_data})
 
@@ -91,6 +92,37 @@ def create_job(request):
             return redirect('jobs.detail', job_id=job.id)
     else:
         form = JobCreateForm(initial={'company': recruiter.company_name})
+
+    template_data['form'] = form
+    return render(request, 'jobs/job_create.html', {'template_data': template_data})
+
+
+@login_required
+def edit_job(request, job_id):
+    recruiter = get_recruiter(request.user)
+    if recruiter is None:
+        return HttpResponseForbidden('Only recruiter accounts can edit job postings.')
+
+    job = get_object_or_404(Job, pk=job_id)
+    if job.posted_by_id != recruiter.id:
+        return HttpResponseForbidden('You can only edit your own job postings.')
+
+    template_data = {
+        'title': 'Edit Job Posting - JobsFinder',
+        'can_post_jobs': True,
+        'form_heading': 'Edit Job Posting',
+        'submit_label': 'Save Changes',
+        'cancel_to_job': True,
+        'job_id': job.id,
+    }
+
+    if request.method == 'POST':
+        form = JobCreateForm(request.POST, instance=job)
+        if form.is_valid():
+            form.save()
+            return redirect('jobs.detail', job_id=job.id)
+    else:
+        form = JobCreateForm(instance=job)
 
     template_data['form'] = form
     return render(request, 'jobs/job_create.html', {'template_data': template_data})

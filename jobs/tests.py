@@ -39,3 +39,74 @@ class JobCreatePermissionTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(Job.objects.count(), 0)
+
+
+class JobEditPermissionTests(TestCase):
+    def setUp(self):
+        self.owner_user = User.objects.create_user(
+            username='recruiter_owner',
+            password='ComplexPass123!',
+        )
+        self.owner_recruiter = Recruiter.objects.create(
+            user=self.owner_user,
+            company_name='Acme',
+        )
+        self.other_user = User.objects.create_user(
+            username='recruiter_other',
+            password='ComplexPass123!',
+        )
+        self.other_recruiter = Recruiter.objects.create(
+            user=self.other_user,
+            company_name='Other Corp',
+        )
+        self.job = Job.objects.create(
+            title='Backend Engineer',
+            company='Acme',
+            location='Atlanta, GA',
+            description='Build APIs',
+            skills='Python, Django',
+            mode='hybrid',
+            posted_by=self.owner_recruiter,
+        )
+
+    def test_owner_can_edit_job(self):
+        self.client.login(username='recruiter_owner', password='ComplexPass123!')
+        response = self.client.post(
+            reverse('jobs.edit', kwargs={'job_id': self.job.id}),
+            {
+                'title': 'Senior Backend Engineer',
+                'company': 'Acme',
+                'location': 'Atlanta, GA',
+                'description': 'Build and scale APIs',
+                'skills': 'Python, Django, PostgreSQL',
+                'min_salary': '130000',
+                'max_salary': '170000',
+                'mode': 'remote',
+                'visa_sponsorship': True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.job.refresh_from_db()
+        self.assertEqual(self.job.title, 'Senior Backend Engineer')
+        self.assertEqual(self.job.mode, 'remote')
+        self.assertTrue(self.job.visa_sponsorship)
+
+    def test_non_owner_recruiter_cannot_edit_job(self):
+        self.client.login(username='recruiter_other', password='ComplexPass123!')
+        response = self.client.post(
+            reverse('jobs.edit', kwargs={'job_id': self.job.id}),
+            {
+                'title': 'Tampered Title',
+                'company': 'Acme',
+                'location': 'Atlanta, GA',
+                'description': 'Build APIs',
+                'skills': 'Python, Django',
+                'mode': 'hybrid',
+                'visa_sponsorship': False,
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.job.refresh_from_db()
+        self.assertEqual(self.job.title, 'Backend Engineer')
