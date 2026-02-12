@@ -22,38 +22,38 @@ def job_list(request):
     template_data = {}
     template_data['title'] = 'Search Jobs - JobsFinder'
     template_data['can_post_jobs'] = get_recruiter(request.user) is not None
-    
+
     if request.method == 'GET':
         form = JobSearchForm(request.GET)
         jobs = Job.objects.all()
-        
+
         if form.is_valid():
 
             if form.cleaned_data.get('title'):
                 jobs = jobs.filter(title__icontains=form.cleaned_data['title'])
-            
+
             if form.cleaned_data.get('skills'):
                 skills_list = [skill.strip() for skill in form.cleaned_data['skills'].split(',')]
                 skill_query = Q()
                 for skill in skills_list:
                     skill_query |= Q(skills__icontains=skill)
                 jobs = jobs.filter(skill_query)
-            
+
             if form.cleaned_data.get('location'):
                 jobs = jobs.filter(location__icontains=form.cleaned_data['location'])
-            
+
             if form.cleaned_data.get('min_salary'):
                 jobs = jobs.filter(max_salary__gte=form.cleaned_data['min_salary'])
-            
+
             if form.cleaned_data.get('max_salary'):
                 jobs = jobs.filter(min_salary__lte=form.cleaned_data['max_salary'])
-            
+
             if form.cleaned_data.get('mode'):
                 jobs = jobs.filter(mode=form.cleaned_data['mode'])
-            
+
             if form.cleaned_data.get('visa_sponsorship'):
                 jobs = jobs.filter(visa_sponsorship=True)
-        
+
         template_data['form'] = form
         template_data['jobs'] = jobs
         template_data['job_count'] = jobs.count()
@@ -66,7 +66,6 @@ def job_detail(request, job_id):
     template_data = {
         'title': f"{job.title} - JobsFinder",
         'job': job,
-        'can_post_jobs': recruiter is not None,
         'can_edit_job': recruiter is not None and job.posted_by_id == recruiter.id,
     }
     return render(request, 'jobs/job_detail.html', {'template_data': template_data})
