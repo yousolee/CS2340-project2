@@ -5,15 +5,15 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
       <h3 class="mb-1">Recruiter Dashboard</h3>
-      <p class="text-muted mb-0">Manage your job postings.</p>
+      <p class="text-muted mb-0">Manage postings, review applications, and track updates.</p>
     </div>
     <a class="btn btn-success" href="{% url 'jobs.create' %}">Post a New Job</a>
   </div>
   <hr />
 
-  <div class="row mb-4">
+  <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="card">
+      <div class="card h-100">
         <div class="card-body">
           <h6 class="text-muted">Total Posts</h6>
           <h4 class="mb-0">{{ template_data.posted_jobs_count }}</h4>
@@ -21,20 +21,82 @@
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card">
+      <div class="card h-100">
         <div class="card-body">
-          <h6 class="text-muted">Total Applications</h6>
-          <h4 class="mb-0">{{ template_data.total_applications }}</h4>
+          <h6 class="text-muted">Applications</h6>
+          <a class="btn btn-outline-primary btn-sm mt-2" href="{% url 'applications:list' %}">
+            View All Applications
+          </a>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card bg-primary text-white">
+    <div class="col-md-6">
+      <div class="card bg-primary text-white h-100">
+        <div class="card-body d-flex flex-column justify-content-between">
+          <div>
+            <h6 class="mb-2">Find Talent</h6>
+            <p class="mb-3">Search job seeker profiles and background details.</p>
+          </div>
+          <div>
+            <a href="{% url 'accounts.candidate_search' %}" class="btn btn-light btn-sm">
+              <i class="fas fa-search me-2"></i>Search Candidates
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card h-100">
         <div class="card-body">
-          <h6 class="mb-3">Find Talent</h6>
-          <a href="{% url 'accounts.candidate_search' %}" class="btn btn-light">
-            <i class="fas fa-search me-2"></i>Search Candidates
-          </a>
+          <h5 class="mb-3">New Notifications</h5>
+          {% if template_data.notifications %}
+            <ul class="list-group list-group-flush">
+              {% for item in template_data.notifications %}
+                <li class="list-group-item px-0">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      {% if item.application_id %}
+                        <a href="{% url 'applications:detail' item.application_id %}" class="text-decoration-none">
+                          {{ item.text }}
+                        </a>
+                      {% else %}
+                        {{ item.text }}
+                      {% endif %}
+                    </div>
+                    <small class="text-muted ms-2">{{ item.created_at|date:"M d, H:i" }}</small>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="alert alert-light mb-0">No new notifications.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="mb-3">Recent Applications</h5>
+          {% if template_data.recent_applications %}
+            <ul class="list-group list-group-flush">
+              {% for app in template_data.recent_applications %}
+                <li class="list-group-item px-0">
+                  <div class="d-flex justify-content-between">
+                    <a href="{% url 'applications:detail' app.id %}" class="text-decoration-none">
+                      {{ app.applicant.username }} for {{ app.job.title }}
+                    </a>
+                    <span class="badge bg-secondary">{{ app.get_status_display }}</span>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="alert alert-light mb-0">No applications yet.</div>
+          {% endif %}
         </div>
       </div>
     </div>

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .status-timeline-wrap {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  .status-track {
+    display: flex;
+    align-items: flex-start;
+    min-width: max-content;
+    padding: 0.5rem 0.5rem 0.25rem 0.5rem;
+  }
+  .timeline-node {
+    width: 240px;
+    flex: 0 0 240px;
+    position: relative;
+    padding-right: 1rem;
+  }
+  .timeline-head {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .timeline-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 3px solid #0d6efd;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+    z-index: 2;
+  }
+  .timeline-line {
+    height: 4px;
+    flex: 1;
+    margin-left: 0.5rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0d6efd 0%, #6ea8fe 100%);
+  }
+  .timeline-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    background: #fff;
+    min-height: 120px;
+  }
+  .timeline-label {
+    font-weight: 600;
+  }
+</style>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Application Detail</h3>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'applications:list' %}">Back to Applications</a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h5 class="mb-1">{{ application.job.title }}</h5>
+          <div class="text-muted">{{ application.job.company }}</div>
+        </div>
+        <span class="badge bg-primary">{{ application.get_status_display }}</span>
+      </div>
+      <hr>
+      <p class="mb-1">
+        <strong>Applicant:</strong>
+        <a href="{% url 'profiles.public' application.applicant.username %}" target="_blank" rel="noopener noreferrer">
+          {{ application.applicant.username }}
+        </a>
+      </p>
+      <p class="mb-1"><strong>Applied:</strong> {{ application.created_at|date:"M d, Y H:i" }}</p>
+      <p class="mb-2"><strong>Last Updated:</strong> {{ application.updated_at|date:"M d, Y H:i" }}</p>
+
+      {% if application.note %}
+        <p class="mb-2"><strong>Application Note:</strong></p>
+        <p class="mb-3">{{ application.note }}</p>
+      {% endif %}
+
+      {% if application.resume %}
+        <p class="mb-0"><strong>Resume:</strong> <a href="{{ application.resume.url }}" target="_blank">Open Resume</a></p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if user_is_recruiter_for_job and can_recruiter_manage %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h6 class="mb-3">Recruiter Actions</h6>
+
+        {% if next_action_value and next_action_label %}
+          <form method="post" action="{% url 'applications:update_status' application.pk %}" class="mb-2">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="{{ next_action_value }}">
+            <div class="mb-2">
+              <label for="status_message" class="form-label mb-1">Message to applicant (optional)</label>
+              <textarea id="status_message" name="status_message" rows="2" class="form-control" placeholder="Optional note. If empty, a default message is used."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">{{ next_action_label }}</button>
+          </form>
+        {% endif %}
+
+        <form method="post" action="{% url 'applications:update_status' application.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <div class="mb-2">
+            <label for="rejection_note" class="form-label mb-1">Reject with note</label>
+            <textarea id="rejection_note" name="rejection_note" rows="3" class="form-control" placeholder="Provide a reason the applicant can see."></textarea>
+          </div>
+          <button type="submit" class="btn btn-outline-danger btn-sm">Reject Application</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-body">
+      <h6 class="mb-3">Status Timeline</h6>
+      {% if timeline_nodes %}
+        <div class="status-timeline-wrap">
+          <div class="status-track">
+            {% for node in timeline_nodes %}
+              <div class="timeline-node">
+                <div class="timeline-head">
+                  <span class="timeline-dot"></span>
+                  {% if not forloop.last %}
+                    <span class="timeline-line"></span>
+                  {% endif %}
+                </div>
+                <div class="timeline-card">
+                  <div class="timeline-label">{{ node.label }}</div>
+                  <div class="small text-muted mb-1">{{ node.created_at|date:"M d, Y H:i" }}</div>
+                  <div class="small text-muted mb-2">By {{ node.actor }}</div>
+                  {% if node.message %}
+                    <div class="small">{{ node.message }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <div>No timeline events yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

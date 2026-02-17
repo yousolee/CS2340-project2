@@ -4,6 +4,7 @@ from django.forms.utils import ErrorList
 from django.utils.safestring import mark_safe
 
 from .models import Recruiter
+from profiles.models import Profile
 
 
 class CustomErrorList(ErrorList):
@@ -40,14 +41,22 @@ class CustomUserCreationForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=commit)
+        if not commit:
+            return user
+
         account_type = self.cleaned_data.get('account_type')
         company_name = self.cleaned_data.get('company_name', '').strip()
+        profile, _ = Profile.objects.get_or_create(user=user)
 
         if account_type == 'recruiter':
             Recruiter.objects.get_or_create(
                 user=user,
                 defaults={'company_name': company_name},
             )
+            profile.role = Profile.Role.RECRUITER
+        else:
+            profile.role = Profile.Role.JOB_SEEKER
+        profile.save(update_fields=['role'])
 
         return user
     

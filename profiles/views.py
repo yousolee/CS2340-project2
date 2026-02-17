@@ -1,8 +1,9 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
-from django.http import Http404
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 
+from accounts.utils import is_job_seeker
 from .forms import (
     AboutProfileForm,
     BasicProfileForm,
@@ -33,8 +34,8 @@ PROFILE_SECTION_FORMS = {
 
 @login_required
 def my_profile(request):
-    if hasattr(request.user, 'recruiter_profile'):
-        return redirect('accounts.dashboard')
+    if not is_job_seeker(request.user):
+        return HttpResponseForbidden('Only job seeker accounts can view this page.')
     profile, _ = Profile.objects.get_or_create(user=request.user)
     template_data = {
         "title": "My Profile",
@@ -46,13 +47,15 @@ def my_profile(request):
 
 @login_required
 def edit_profile(request):
-    if hasattr(request.user, 'recruiter_profile'):
-        return redirect('accounts.dashboard')
+    if not is_job_seeker(request.user):
+        return HttpResponseForbidden('Only job seeker accounts can edit a profile.')
     return redirect("profiles.edit_section", section="basic")
 
 
 @login_required
 def edit_profile_section(request, section):
+    if not is_job_seeker(request.user):
+        return HttpResponseForbidden('Only job seeker accounts can edit a profile.')
     if section not in SECTION_LABELS:
         raise Http404("Unknown profile section.")
 

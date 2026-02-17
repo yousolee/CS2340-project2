@@ -3,16 +3,16 @@
 {% block content %}
 <div class="container py-4">
   <h3 class="mb-1">Job Seeker Dashboard</h3>
-  <p class="text-muted">Track your profile and find roles that fit your skills.</p>
+  <p class="text-muted">Track your applications and stay up to date on each stage.</p>
   <hr />
 
-  <div class="row g-3">
+  <div class="row g-3 mb-4">
     <div class="col-md-4">
       <div class="card h-100">
         <div class="card-body">
           <h5 class="card-title">My Profile</h5>
-          <p class="card-text">Keep your profile up to date so recruiters can evaluate you quickly.</p>
-          <a class="btn btn-primary" href="{% url 'profiles.me' %}">Open Profile</a>
+          <p class="card-text">Keep your profile updated so recruiters can evaluate you quickly.</p>
+          <a class="btn btn-primary btn-sm" href="{% url 'profiles.me' %}">Open Profile</a>
         </div>
       </div>
     </div>
@@ -20,8 +20,8 @@
       <div class="card h-100">
         <div class="card-body">
           <h5 class="card-title">Browse Jobs</h5>
-          <p class="card-text">View all posted jobs and explore opportunities.</p>
-          <a class="btn btn-outline-primary" href="{% url 'jobs.list' %}">Browse</a>
+          <p class="card-text">Explore currently posted jobs and apply to relevant roles.</p>
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'jobs.list' %}">Browse Jobs</a>
         </div>
       </div>
     </div>
@@ -29,8 +29,74 @@
       <div class="card h-100">
         <div class="card-body">
           <h5 class="card-title">My Applications</h5>
-          <p class="card-text">Track the jobs you've applied to and review your notes.</p>
-          <a class="btn btn-outline-primary" href="{% url 'jobs.my_applications' %}">View Applications</a>
+          <p class="card-text">View all your applications and track stage changes.</p>
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'applications:list' %}">View Applications</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card h-100 {% if template_data.notification_count %}border-danger shadow-sm{% endif %}">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">New Notifications</h5>
+            {% if template_data.notification_count %}
+              <span class="badge bg-danger">New: {{ template_data.notification_count }}</span>
+            {% endif %}
+          </div>
+          {% if template_data.notification_count %}
+            <div class="alert alert-danger py-2">
+              You have {{ template_data.notification_count }} unread notification{{ template_data.notification_count|pluralize }}.
+            </div>
+          {% endif %}
+          {% if template_data.notifications %}
+            <ul class="list-group list-group-flush">
+              {% for item in template_data.notifications %}
+                <li class="list-group-item px-0 {% if template_data.notification_count %}list-group-item-warning{% endif %}">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      {% if item.application_id %}
+                        <a href="{% url 'applications:detail' item.application_id %}" class="text-decoration-none">
+                          {{ item.text }}
+                        </a>
+                      {% else %}
+                        {{ item.text }}
+                      {% endif %}
+                    </div>
+                    <small class="text-muted ms-2">{{ item.created_at|date:"M d, H:i" }}</small>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="alert alert-light mb-0">No new notifications.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="mb-3">Recent Application Updates</h5>
+          {% if template_data.recent_applications %}
+            <ul class="list-group list-group-flush">
+              {% for app in template_data.recent_applications %}
+                <li class="list-group-item px-0">
+                  <div class="d-flex justify-content-between">
+                    <a href="{% url 'applications:detail' app.id %}" class="text-decoration-none">
+                      {{ app.job.title }}
+                    </a>
+                    <span class="badge bg-secondary">{{ app.get_status_display }}</span>
+                  </div>
+                  <small class="text-muted">Applied {{ app.created_at|date:"M d, Y" }}</small>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="alert alert-light mb-0">You have not applied to any jobs yet.</div>
+          {% endif %}
         </div>
       </div>
     </div>

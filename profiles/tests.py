@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
+from accounts.models import Recruiter
 from .models import Education, Experience, Profile
 
 
@@ -68,3 +69,21 @@ class ProfileModelsTest(TestCase):
 
         profile_response = self.client.get(reverse("profiles.me"))
         self.assertContains(profile_response, "Software Engineer")
+
+    def test_recruiter_cannot_access_job_seeker_profile_pages(self):
+        recruiter_user = User.objects.create_user(
+            username="recruiter_user",
+            password="password123",
+        )
+        Recruiter.objects.create(user=recruiter_user, company_name="Acme")
+
+        self.client.login(username="recruiter_user", password="password123")
+        me_response = self.client.get(reverse("profiles.me"))
+        edit_response = self.client.get(reverse("profiles.edit"))
+        section_response = self.client.get(
+            reverse("profiles.edit_section", kwargs={"section": "basic"})
+        )
+
+        self.assertEqual(me_response.status_code, 403)
+        self.assertEqual(edit_response.status_code, 403)
+        self.assertEqual(section_response.status_code, 403)

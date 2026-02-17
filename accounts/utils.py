@@ -2,6 +2,10 @@
 Utility functions for user role management
 """
 
+from django.core.exceptions import ObjectDoesNotExist
+
+from profiles.models import Profile
+
 
 def is_administrator(user):
     """Check if user is an administrator"""
@@ -15,7 +19,12 @@ def is_recruiter(user):
 
 def is_job_seeker(user):
     """Check if user is a job seeker"""
-    return user.is_authenticated and hasattr(user, 'profile')
+    if not user.is_authenticated or is_administrator(user) or is_recruiter(user):
+        return False
+    try:
+        return user.profile.role == Profile.Role.JOB_SEEKER
+    except ObjectDoesNotExist:
+        return False
 
 
 def get_user_role(user):

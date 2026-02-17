@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import models
 
 from accounts.models import Recruiter
@@ -34,21 +33,3 @@ class Job(models.Model):
 
     class Meta:
         ordering  = ['-posted_date']
-
-
-class JobApplication(models.Model):
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='applications')
-    applicant = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='job_applications',
-    )
-    note = models.TextField(blank=True, help_text="Include a personalized note with your application")
-    applied_date = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-applied_date']
-        unique_together = ['job', 'applicant']
-
-    def __str__(self):
-        return f"{self.applicant.username} -> {self.job.title}"

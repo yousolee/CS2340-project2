@@ -3,22 +3,43 @@ from django.contrib.auth import login as auth_login, authenticate, logout as aut
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db.models import Q, Count
-from profiles.models import Profile, Experience
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseForbidden
+from profiles.models import Profile
 from .forms import CandidateSearchForm
 from .models import Recruiter
+from applications.models import Application, Notification
 from jobs.models import Job
 from .forms import CustomUserCreationForm, CustomErrorList
+from .utils import (
+    get_user_role,
+    is_administrator,
+    is_recruiter as is_recruiter_user,
+)
 import csv
-from django.http import HttpResponse
 
 
-def is_recruiter(user):
-    return user.is_authenticated and hasattr(user, 'recruiter_profile')
+def _role_display_label(user):
+    role = get_user_role(user)
+    if role == 'administrator':
+        return 'Administrator'
+    if role == 'recruiter':
+        return 'Recruiter'
+    if role == 'job_seeker':
+        return 'Job Seeker'
+    return 'No Role'
 
 
-def is_admin(user):
-    return user.is_authenticated and (user.is_staff or user.is_superuser)
+def _notification_text(notification):
+    if notification.verb == "application_received":
+        applicant = (notification.data or {}).get("applicant", "A candidate")
+        job_title = (notification.data or {}).get("job_title", "your job")
+        return f"{applicant} applied to {job_title}."
+    if notification.verb == "application_status_changed":
+        new_status = (notification.data or {}).get("new_status", "")
+        status_label = dict(Application.Status.choices).get(new_status, "Updated")
+        return f"Application status changed to {status_label}."
+    return notification.verb.replace("_", " ").capitalize()
 
 
 def signup(request):
@@ -76,32 +97,71 @@ def login(request):
 
 @login_required
 def dashboard(request):
-    if is_recruiter(request.user):
-        from jobs.models import JobApplication
+    role = get_user_role(request.user)
+
+    if role == 'recruiter':
         recruiter = request.user.recruiter_profile
         posted_jobs = Job.objects.filter(posted_by=recruiter)
-        total_applications = JobApplication.objects.filter(job__posted_by=recruiter).count()
+        recent_applications = Application.objects.filter(
+            job__posted_by=recruiter
+        ).select_related("job", "applicant")[:8]
+        unread_notifications_qs = Notification.objects.filter(
+            recipient=request.user,
+            is_read=False,
+        ).select_related("application", "actor")[:8]
+        unread_notifications = list(unread_notifications_qs)
+        if unread_notifications:
+            Notification.objects.filter(
+                id__in=[notification.id for notification in unread_notifications]
+            ).update(is_read=True)
+
         template_data = {
             'title': 'Recruiter Dashboard',
             'posted_jobs_count': posted_jobs.count(),
-            'total_applications': total_applications,
             'recent_jobs': posted_jobs[:5],
+            'recent_applications': recent_applications,
+            'notifications': [
+                {
+                    'id': notification.id,
+                    'text': _notification_text(notification),
+                    'created_at': notification.created_at,
+                    'application_id': notification.application_id,
+                }
+                for notification in unread_notifications
+            ],
         }
         return render(request, 'accounts/recruiter_dashboard.html', {'template_data': template_data})
 
-    if hasattr(request.user, 'profile'):
-        from jobs.models import JobApplication
-        application_count = JobApplication.objects.filter(applicant=request.user).count()
+    if role == 'job_seeker':
+        recent_applications = Application.objects.filter(applicant=request.user).select_related(
+            "job"
+        )[:8]
+        unread_notifications_qs = Notification.objects.filter(
+            recipient=request.user,
+            is_read=False,
+        ).select_related("application", "actor")[:8]
+        unread_notifications = list(unread_notifications_qs)
+
         template_data = {
             'title': 'Job Seeker Dashboard',
-            'application_count': application_count,
+            'recent_applications': recent_applications,
+            'notification_count': len(unread_notifications),
+            'notifications': [
+                {
+                    'id': notification.id,
+                    'text': _notification_text(notification),
+                    'created_at': notification.created_at,
+                    'application_id': notification.application_id,
+                }
+                for notification in unread_notifications
+            ],
         }
-    else:
-        template_data = {
-            'title': 'Job Seeker Dashboard',
-            'application_count': 0,
-        }
-    return render(request, 'accounts/job_seeker_dashboard.html', {'template_data': template_data})
+        return render(request, 'accounts/job_seeker_dashboard.html', {'template_data': template_data})
+
+    if role == 'administrator':
+        return redirect('accounts.admin_dashboard')
+
+    return HttpResponseForbidden('No valid account role is assigned to this user.')
 
 
 @login_required
@@ -109,15 +169,17 @@ def logout(request):
     auth_logout(request)
     return redirect('home.index')
 
+
 @login_required
-@user_passes_test(is_recruiter)
+@user_passes_test(is_recruiter_user)
 def candidate_search(request):
-    template_data = {}
-    template_data['title'] = 'Candidate Search'
+    template_data = {
+        'title': 'Candidate Search',
+    }
 
     if request.method == 'GET':
         form = CandidateSearchForm(request.GET)
-        profiles = Profile.objects.filter(user__recruiter_profile__isnull=True).select_related('user')
+        profiles = Profile.objects.filter(role=Profile.Role.JOB_SEEKER).select_related('user')
 
         if form.is_valid():
             if form.cleaned_data.get('skills'):
@@ -134,27 +196,30 @@ def candidate_search(request):
                 profiles = profiles.filter(experiences__company__icontains=form.cleaned_data['company']).distinct()
             
             if form.cleaned_data.get('job_title'):
-                profiles = profiles.filter(experiences__job_title__icontains=form.cleaned_data['job_title']).distinct()
+                profiles = profiles.filter(experiences__title__icontains=form.cleaned_data['job_title']).distinct()
             
             template_data['form'] = form
             template_data['profiles'] = profiles
             template_data['profile_count'] = profiles.count()
             return render(request, 'accounts/candidate_search.html', {'template_data': template_data})
 
+    template_data['form'] = CandidateSearchForm()
+    template_data['profiles'] = Profile.objects.none()
+    template_data['profile_count'] = 0
+    return render(request, 'accounts/candidate_search.html', {'template_data': template_data})
+
 
 # ============= ADMIN DASHBOARD VIEWS =============
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_administrator)
 def admin_dashboard(request):
     """Main admin dashboard with statistics"""
-    from jobs.models import JobApplication
-
     total_users = User.objects.count()
     total_recruiters = Recruiter.objects.count()
-    total_job_seekers = Profile.objects.count()
+    total_job_seekers = Profile.objects.filter(role=Profile.Role.JOB_SEEKER).count()
     total_jobs = Job.objects.count()
-    total_applications = JobApplication.objects.count()
+    total_applications = Application.objects.count()
     active_users = User.objects.filter(is_active=True).count()
     inactive_users = User.objects.filter(is_active=False).count()
 
@@ -172,26 +237,16 @@ def admin_dashboard(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_administrator)
 def admin_users(request):
     """User management page"""
     users = User.objects.all().select_related('recruiter_profile', 'profile').order_by('-date_joined')
 
-    # Add role to each user
     users_with_roles = []
     for user in users:
-        if user.is_superuser:
-            role = 'Administrator'
-        elif hasattr(user, 'recruiter_profile'):
-            role = 'Recruiter'
-        elif hasattr(user, 'profile'):
-            role = 'Job Seeker'
-        else:
-            role = 'No Role'
-
         users_with_roles.append({
             'user': user,
-            'role': role,
+            'role': _role_display_label(user),
         })
 
     template_data = {
@@ -202,7 +257,7 @@ def admin_users(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_administrator)
 def admin_toggle_user(request, user_id):
     """Toggle user active status"""
     if request.method == 'POST':
@@ -217,7 +272,7 @@ def admin_toggle_user(request, user_id):
 
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_administrator)
 def admin_jobs(request):
     """Job moderation page"""
     jobs = Job.objects.all().select_related('posted_by__user').order_by('-posted_date')
@@ -230,7 +285,7 @@ def admin_jobs(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_administrator)
 def admin_delete_job(request, job_id):
     """Delete a job post"""
     if request.method == 'POST':
@@ -243,7 +298,7 @@ def admin_delete_job(request, job_id):
 
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_administrator)
 def admin_export_users(request):
     """Export users to CSV"""
     response = HttpResponse(content_type='text/csv')
@@ -254,21 +309,12 @@ def admin_export_users(request):
 
     users = User.objects.all().select_related('recruiter_profile', 'profile')
     for user in users:
-        if user.is_superuser:
-            role = 'Administrator'
-        elif hasattr(user, 'recruiter_profile'):
-            role = 'Recruiter'
-        elif hasattr(user, 'profile'):
-            role = 'Job Seeker'
-        else:
-            role = 'No Role'
-
         writer.writerow([
             user.username,
             user.email,
             user.first_name,
             user.last_name,
-            role,
+            _role_display_label(user),
             user.is_active,
             user.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
         ])
@@ -277,11 +323,9 @@ def admin_export_users(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_administrator)
 def admin_export_jobs(request):
     """Export jobs to CSV"""
-    from jobs.models import JobApplication
-
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="jobs_export.csv"'
 
@@ -293,7 +337,7 @@ def admin_export_jobs(request):
 
     jobs = Job.objects.all().select_related('posted_by__user')
     for job in jobs:
-        app_count = JobApplication.objects.filter(job=job).count()
+        app_count = Application.objects.filter(job=job).count()
         writer.writerow([
             job.title,
             job.company,
@@ -312,11 +356,9 @@ def admin_export_jobs(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(is_administrator)
 def admin_export_applications(request):
     """Export job applications to CSV"""
-    from jobs.models import JobApplication
-
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="applications_export.csv"'
 
@@ -326,7 +368,7 @@ def admin_export_applications(request):
         'Job Title', 'Company', 'Personalized Note', 'Applied Date',
     ])
 
-    applications = JobApplication.objects.all().select_related('applicant', 'job')
+    applications = Application.objects.all().select_related('applicant', 'job')
     for app in applications:
         writer.writerow([
             app.applicant.username,
@@ -335,7 +377,7 @@ def admin_export_applications(request):
             app.job.title,
             app.job.company,
             app.note,
-            app.applied_date.strftime('%Y-%m-%d %H:%M:%S'),
+            app.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         ])
 
     return response

@@ -1,15 +1,14 @@
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Q
 from django.http import HttpResponseForbidden
-from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
+
 from accounts.models import Recruiter
-from .models import Job, JobApplication
-from .forms import JobSearchForm, JobCreateForm, JobApplicationForm
+
+from .forms import JobCreateForm, JobSearchForm
+from .models import Job
 
 
-
-# Create your views here.
 def get_recruiter(user):
     if not user.is_authenticated:
         return None
@@ -17,10 +16,6 @@ def get_recruiter(user):
         return user.recruiter_profile
     except Recruiter.DoesNotExist:
         return None
-
-
-def is_job_seeker(user):
-    return user.is_authenticated and hasattr(user, 'profile') and not hasattr(user, 'recruiter_profile')
 
 
 def job_list(request):
@@ -33,7 +28,6 @@ def job_list(request):
         jobs = Job.objects.all()
 
         if form.is_valid():
-
             if form.cleaned_data.get('title'):
                 jobs = jobs.filter(title__icontains=form.cleaned_data['title'])
 
@@ -64,90 +58,19 @@ def job_list(request):
         template_data['job_count'] = jobs.count()
         return render(request, 'jobs/job_list.html', {'template_data': template_data})
 
-def job_detail(request, job_id):
 
+def job_detail(request, job_id):
     recruiter = get_recruiter(request.user)
     job = get_object_or_404(Job, pk=job_id)
-
-    has_applied = False
-    application_form = None
-    user_is_job_seeker = False
-
-    if request.user.is_authenticated:
-        user_is_job_seeker = is_job_seeker(request.user)
-        has_applied = JobApplication.objects.filter(job=job, applicant=request.user).exists()
-        if user_is_job_seeker and not has_applied:
-            application_form = JobApplicationForm()
-
+    can_edit_job = recruiter is not None and job.posted_by_id == recruiter.id
     template_data = {
         'title': f"{job.title} - JobsFinder",
         'job': job,
-        'can_edit_job': recruiter is not None and job.posted_by_id == recruiter.id,
-        'has_applied': has_applied,
-        'application_form': application_form,
-        'is_job_seeker': user_is_job_seeker,
+        'can_edit_job': can_edit_job,
+        'can_view_applications': can_edit_job,
+        'application_count': job.applications.count() if can_edit_job else 0,
     }
     return render(request, 'jobs/job_detail.html', {'template_data': template_data})
-
-
-@login_required
-def apply_to_job(request, job_id):
-    if not is_job_seeker(request.user):
-        return HttpResponseForbidden('Only job seekers can apply to jobs.')
-
-    job = get_object_or_404(Job, pk=job_id)
-
-    if JobApplication.objects.filter(job=job, applicant=request.user).exists():
-        messages.info(request, 'You have already applied to this job.')
-        return redirect('jobs.detail', job_id=job.id)
-
-    if request.method == 'POST':
-        form = JobApplicationForm(request.POST)
-        if form.is_valid():
-            application = form.save(commit=False)
-            application.job = job
-            application.applicant = request.user
-            application.save()
-            messages.success(request, f'You have successfully applied to "{job.title}"!')
-            return redirect('jobs.detail', job_id=job.id)
-
-    return redirect('jobs.detail', job_id=job.id)
-
-
-@login_required
-def job_applications(request, job_id):
-    recruiter = get_recruiter(request.user)
-    if recruiter is None:
-        return HttpResponseForbidden('Only recruiters can view applications.')
-
-    job = get_object_or_404(Job, pk=job_id)
-    if job.posted_by_id != recruiter.id:
-        return HttpResponseForbidden('You can only view applications for your own job postings.')
-
-    applications = JobApplication.objects.filter(job=job).select_related('applicant', 'applicant__profile')
-
-    template_data = {
-        'title': f'Applications for {job.title} - JobsFinder',
-        'job': job,
-        'applications': applications,
-        'application_count': applications.count(),
-    }
-    return render(request, 'jobs/job_applications.html', {'template_data': template_data})
-
-
-@login_required
-def my_applications(request):
-    if not is_job_seeker(request.user):
-        return HttpResponseForbidden('Only job seekers can view their applications.')
-
-    applications = JobApplication.objects.filter(applicant=request.user).select_related('job')
-
-    template_data = {
-        'title': 'My Applications - JobsFinder',
-        'applications': applications,
-        'application_count': applications.count(),
-    }
-    return render(request, 'jobs/my_applications.html', {'template_data': template_data})
 
 
 @login_required
@@ -212,7 +135,7 @@ def my_postings(request):
     if recruiter is None:
         return HttpResponseForbidden('Only recruiter accounts can view recruiter postings.')
 
-    jobs = Job.objects.filter(posted_by=recruiter)
+    jobs = Job.objects.filter(posted_by=recruiter).annotate(application_count=Count("applications"))
     template_data = {
         'title': 'My Job Postings - JobsFinder',
         'jobs': jobs,

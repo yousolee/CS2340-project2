@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'jobs',
     'profiles',
     'accounts',
+    'applications',
 ]
 
 MIDDLEWARE = [
@@ -132,3 +133,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATICFILES_DIRS = [ BASE_DIR / 'jobsfinder/static/',
                     ]
+
+# Media files (for uploaded resumes)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

@@ -4,7 +4,17 @@ from django.db import models
 
 
 class Profile(models.Model):
+    class Role(models.TextChoices):
+        JOB_SEEKER = "job_seeker", "Job Seeker"
+        RECRUITER = "recruiter", "Recruiter"
+
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    role = models.CharField(
+        max_length=20,
+        choices=Role.choices,
+        default=Role.JOB_SEEKER,
+        db_index=True,
+    )
     headline = models.CharField(max_length=160, blank=True)
     summary = models.TextField(max_length=1000, blank=True)
     location = models.CharField(max_length=120, blank=True)

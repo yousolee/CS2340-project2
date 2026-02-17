@@ -31,6 +31,9 @@
               <p class="card-text mt-3 mb-0">{{ job.description|truncatewords:30 }}</p>
               <div class="mt-3">
                 <a class="btn btn-outline-primary btn-sm" href="{% url 'jobs.edit' job.id %}">Edit</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{% url 'applications:list' %}?job={{ job.id }}">
+                  Applications ({{ job.application_count }})
+                </a>
               </div>
             </div>
           </div>
