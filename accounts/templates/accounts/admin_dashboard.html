@@ -47,6 +47,16 @@
   </div>
 
   <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h6 class="text-muted">Total Applications</h6>
+          <h3 class="mb-0">{{ template_data.total_applications }}</h3>
+        </div>
+      </div>
+    </div>
+
+  <div class="row mb-4">
     <div class="col-md-6">
       <div class="card">
         <div class="card-body">
@@ -93,11 +103,19 @@
     <div class="col-md-4 mb-3">
       <div class="card bg-success text-white">
         <div class="card-body">
-          <h6 class="mb-3">Export Data</h6>
-          <p class="mb-3">Download user data as CSV</p>
-          <a href="{% url 'accounts.admin_export_users' %}" class="btn btn-light">
-            <i class="fas fa-download me-2"></i>Export Users
-          </a>
+          <h6 class="mb-3">Export Data (CSV)</h6>
+          <p class="mb-3">Download data for reporting</p>
+          <div class="d-flex flex-column gap-2">
+            <a href="{% url 'accounts.admin_export_users' %}" class="btn btn-light">
+              <i class="fas fa-users me-2"></i>Export Users
+            </a>
+            <a href="{% url 'accounts.admin_export_jobs' %}" class="btn btn-light">
+              <i class="fas fa-briefcase me-2"></i>Export Jobs
+            </a>
+            <a href="{% url 'accounts.admin_export_applications' %}" class="btn btn-light">
+              <i class="fas fa-file-alt me-2"></i>Export Applications
+            </a>
+          </div>
         </div>
       </div>
     </div>

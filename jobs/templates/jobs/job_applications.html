@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <a class="text-decoration-none" href="{% url 'jobs.detail' template_data.job.id %}">&larr; Back to job posting</a>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">Applications for "{{ template_data.job.title }}"</h3>
+      <p class="text-muted mb-0">{{ template_data.application_count }} application{{ template_data.application_count|pluralize }}</p>
+    </div>
+  </div>
+  <hr />
+
+  {% if template_data.applications %}
+    {% for application in template_data.applications %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h5 class="mb-1">
+                <a href="{% url 'profiles.public' application.applicant.username %}" class="text-decoration-none">
+                  {{ application.applicant.get_full_name|default:application.applicant.username }}
+                </a>
+              </h5>
+              <small class="text-muted">{{ application.applicant.email }}</small>
+            </div>
+            <div class="text-muted">
+              <small>Applied {{ application.applied_date|date:"M d, Y" }}</small>
+            </div>
+          </div>
+
+          {% if application.note %}
+            <hr />
+            <h6>Personalized Note</h6>
+            <p class="mb-0">{{ application.note }}</p>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-info">
+      No applications have been received yet for this position.
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}
