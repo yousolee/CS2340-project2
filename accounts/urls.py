@@ -15,4 +15,6 @@ urlpatterns = [
     path('admin-dashboard/jobs/', views.admin_jobs, name='accounts.admin_jobs'),
     path('admin-dashboard/jobs/delete/<int:job_id>/', views.admin_delete_job, name='accounts.admin_delete_job'),
     path('admin-dashboard/export/users/', views.admin_export_users, name='accounts.admin_export_users'),
+    path('admin-dashboard/export/jobs/', views.admin_export_jobs, name='accounts.admin_export_jobs'),
+    path('admin-dashboard/export/applications/', views.admin_export_applications, name='accounts.admin_export_applications'),
 ]

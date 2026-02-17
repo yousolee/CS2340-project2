@@ -77,18 +77,30 @@ def login(request):
 @login_required
 def dashboard(request):
     if is_recruiter(request.user):
+        from jobs.models import JobApplication
         recruiter = request.user.recruiter_profile
         posted_jobs = Job.objects.filter(posted_by=recruiter)
+        total_applications = JobApplication.objects.filter(job__posted_by=recruiter).count()
         template_data = {
             'title': 'Recruiter Dashboard',
             'posted_jobs_count': posted_jobs.count(),
+            'total_applications': total_applications,
             'recent_jobs': posted_jobs[:5],
         }
         return render(request, 'accounts/recruiter_dashboard.html', {'template_data': template_data})
 
-    template_data = {
-        'title': 'Job Seeker Dashboard',
-    }
+    if hasattr(request.user, 'profile'):
+        from jobs.models import JobApplication
+        application_count = JobApplication.objects.filter(applicant=request.user).count()
+        template_data = {
+            'title': 'Job Seeker Dashboard',
+            'application_count': application_count,
+        }
+    else:
+        template_data = {
+            'title': 'Job Seeker Dashboard',
+            'application_count': 0,
+        }
     return render(request, 'accounts/job_seeker_dashboard.html', {'template_data': template_data})
 
 
@@ -136,10 +148,13 @@ def candidate_search(request):
 @user_passes_test(is_admin)
 def admin_dashboard(request):
     """Main admin dashboard with statistics"""
+    from jobs.models import JobApplication
+
     total_users = User.objects.count()
     total_recruiters = Recruiter.objects.count()
     total_job_seekers = Profile.objects.count()
     total_jobs = Job.objects.count()
+    total_applications = JobApplication.objects.count()
     active_users = User.objects.filter(is_active=True).count()
     inactive_users = User.objects.filter(is_active=False).count()
 
@@ -149,6 +164,7 @@ def admin_dashboard(request):
         'total_recruiters': total_recruiters,
         'total_job_seekers': total_job_seekers,
         'total_jobs': total_jobs,
+        'total_applications': total_applications,
         'active_users': active_users,
         'inactive_users': inactive_users,
     }
@@ -255,6 +271,71 @@ def admin_export_users(request):
             role,
             user.is_active,
             user.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+        ])
+
+    return response
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_export_jobs(request):
+    """Export jobs to CSV"""
+    from jobs.models import JobApplication
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="jobs_export.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Job Title', 'Company', 'Location', 'Work Mode', 'Min Salary', 'Max Salary',
+        'Visa Sponsorship', 'Skills', 'Posted By', 'Posted Date', 'Applications Count',
+    ])
+
+    jobs = Job.objects.all().select_related('posted_by__user')
+    for job in jobs:
+        app_count = JobApplication.objects.filter(job=job).count()
+        writer.writerow([
+            job.title,
+            job.company,
+            job.location,
+            job.get_mode_display(),
+            job.min_salary or '',
+            job.max_salary or '',
+            'Yes' if job.visa_sponsorship else 'No',
+            job.skills,
+            job.posted_by.user.username if job.posted_by else '',
+            job.posted_date.strftime('%Y-%m-%d %H:%M:%S'),
+            app_count,
+        ])
+
+    return response
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_export_applications(request):
+    """Export job applications to CSV"""
+    from jobs.models import JobApplication
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="applications_export.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Applicant Username', 'Applicant Email', 'Applicant Name',
+        'Job Title', 'Company', 'Personalized Note', 'Applied Date',
+    ])
+
+    applications = JobApplication.objects.all().select_related('applicant', 'job')
+    for app in applications:
+        writer.writerow([
+            app.applicant.username,
+            app.applicant.email,
+            app.applicant.get_full_name() or app.applicant.username,
+            app.job.title,
+            app.job.company,
+            app.note,
+            app.applied_date.strftime('%Y-%m-%d %H:%M:%S'),
         ])
 
     return response

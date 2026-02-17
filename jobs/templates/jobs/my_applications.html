@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <a class="text-decoration-none" href="{% url 'accounts.dashboard' %}">&larr; Back to dashboard</a>
+  </div>
+
+  <h3 class="mb-1">My Applications</h3>
+  <p class="text-muted">{{ template_data.application_count }} application{{ template_data.application_count|pluralize }}</p>
+  <hr />
+
+  {% if template_data.applications %}
+    {% for application in template_data.applications %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h5 class="mb-1">
+                <a href="{% url 'jobs.detail' application.job.id %}" class="text-decoration-none">
+                  {{ application.job.title }}
+                </a>
+              </h5>
+              <small class="text-muted">{{ application.job.company }} &middot; {{ application.job.location }}</small>
+            </div>
+            <div class="text-muted">
+              <small>Applied {{ application.applied_date|date:"M d, Y" }}</small>
+            </div>
+          </div>
+
+          {% if application.note %}
+            <hr />
+            <h6>Your Note</h6>
+            <p class="mb-0">{{ application.note }}</p>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-info">
+      You haven't applied to any jobs yet. <a href="{% url 'jobs.list' %}">Browse jobs</a> to get started.
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}

@@ -1,6 +1,21 @@
 from django import forms
 
-from .models import Job
+from .models import Job, JobApplication
+
+
+class JobApplicationForm(forms.ModelForm):
+    class Meta:
+        model = JobApplication
+        fields = ['note']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['note'].widget = forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'Write a personalized note to the recruiter (optional)...',
+        })
+        self.fields['note'].label = 'Personalized Note'
 
 
 class JobSearchForm(forms.Form):
