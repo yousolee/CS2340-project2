@@ -30,6 +30,23 @@
         </div>
       </div>
 
+      {% if template_data.fit_score %}
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3">
+          <div>
+            <h5 class="mb-1">Your Match Score</h5>
+            <div class="text-muted small">This score reflects profile-to-job fit quality.</div>
+            {% if template_data.fit_score.profile_is_sparse %}
+              <div class="text-warning small mt-1">
+                Add more profile details to improve match accuracy.
+              </div>
+            {% endif %}
+          </div>
+          <div>
+            {% include 'jobs/_fit_speedometer.html' with score_100=template_data.fit_score.fit_score_100 band=template_data.fit_score.band size=150 only %}
+          </div>
+        </div>
+      {% endif %}
+
       <hr />
 
       <p class="mb-2"><strong>Location:</strong> {{ template_data.job.location }}</p>

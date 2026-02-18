@@ -112,3 +112,57 @@ class Education(models.Model):
 
     def __str__(self):
         return self.school
+
+
+class ProfileEmbedding(models.Model):
+    profile = models.OneToOneField(
+        Profile, on_delete=models.CASCADE, related_name="embedding_record"
+    )
+    embedding = models.JSONField(default=list, blank=True)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Embedding for profile {self.profile_id}"
+
+
+class ProfileExperienceEmbedding(models.Model):
+    profile = models.OneToOneField(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="experience_embedding_record",
+    )
+    embedding = models.JSONField(default=list, blank=True)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"ProfileExperienceEmbedding<{self.profile_id}>"
+
+
+class ProfileSummarySkillsEmbedding(models.Model):
+    profile = models.OneToOneField(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="summary_skills_embedding_record",
+    )
+    embedding = models.JSONField(default=list, blank=True)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"ProfileSummarySkillsEmbedding<{self.profile_id}>"
+
+
+class ProfileTitleEmbedding(models.Model):
+    profile = models.OneToOneField(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name="title_embedding_record",
+    )
+    embedding = models.JSONField(default=list, blank=True)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"ProfileTitleEmbedding<{self.profile_id}>"

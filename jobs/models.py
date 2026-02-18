@@ -33,3 +33,55 @@ class Job(models.Model):
 
     class Meta:
         ordering  = ['-posted_date']
+
+
+class JobEmbedding(models.Model):
+    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name="embedding_record")
+    embedding = models.JSONField(default=list, blank=True)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Embedding for job {self.job_id}"
+
+
+class JobDescriptionEmbedding(models.Model):
+    job = models.OneToOneField(
+        Job,
+        on_delete=models.CASCADE,
+        related_name="description_embedding_record",
+    )
+    embedding = models.JSONField(default=list, blank=True)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"JobDescriptionEmbedding<{self.job_id}>"
+
+
+class JobTitleEmbedding(models.Model):
+    job = models.OneToOneField(
+        Job,
+        on_delete=models.CASCADE,
+        related_name="title_embedding_record",
+    )
+    embedding = models.JSONField(default=list, blank=True)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"JobTitleEmbedding<{self.job_id}>"
+
+
+class JobSkillsEmbedding(models.Model):
+    job = models.OneToOneField(
+        Job,
+        on_delete=models.CASCADE,
+        related_name="skills_embedding_record",
+    )
+    embedding = models.JSONField(default=list, blank=True)
+    source_hash = models.CharField(max_length=64, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"JobSkillsEmbedding<{self.job_id}>"

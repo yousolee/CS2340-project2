@@ -1,22 +1,29 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
+import csv
+import logging
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from django.contrib import messages
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseForbidden
-from profiles.models import Profile
-from .forms import CandidateSearchForm
-from .models import Recruiter
+from django.shortcuts import redirect, render
+
 from applications.models import Application, Notification
 from jobs.models import Job
-from .forms import CustomUserCreationForm, CustomErrorList
+from jobs.recommendations.service import recommend_jobs_for_profile
+from profiles.models import Profile
+
+from .models import Recruiter
+from .forms import CandidateSearchForm, CustomErrorList, CustomUserCreationForm
 from .utils import (
     get_user_role,
     is_administrator,
     is_recruiter as is_recruiter_user,
 )
-import csv
+
+logger = logging.getLogger(__name__)
 
 
 def _role_display_label(user):
@@ -133,6 +140,19 @@ def dashboard(request):
         return render(request, 'accounts/recruiter_dashboard.html', {'template_data': template_data})
 
     if role == 'job_seeker':
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        recommended_jobs = []
+        profile_is_sparse = False
+        try:
+            recommended_jobs = recommend_jobs_for_profile(
+                profile.id,
+                k=int(getattr(settings, "RECOMMENDER_TOP_K", 8)),
+            )
+            if recommended_jobs:
+                profile_is_sparse = recommended_jobs[0].profile_is_sparse
+        except Exception:  # pragma: no cover - dashboard should not fail on recommendation errors
+            logger.exception("Failed to load recommendations for profile %s", profile.id)
+
         recent_applications = Application.objects.filter(applicant=request.user).select_related(
             "job"
         )[:8]
@@ -146,6 +166,8 @@ def dashboard(request):
             'title': 'Job Seeker Dashboard',
             'recent_applications': recent_applications,
             'notification_count': len(unread_notifications),
+            'recommended_jobs': recommended_jobs,
+            'profile_is_sparse': profile_is_sparse,
             'notifications': [
                 {
                     'id': notification.id,

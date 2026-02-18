@@ -1,0 +1,15 @@
+{% with meter_size=size|default:160 %}
+<div class="fit-speedometer fit-speedometer-{{ band|default:'medium' }}" style="--fit-meter-size: {{ meter_size }}px;">
+  <svg viewBox="0 0 100 60" role="img" aria-label="Job fit score {{ score_100|default:0 }} out of 100">
+    <path class="fit-speedometer-track" d="M 10 50 A 40 40 0 0 1 90 50"></path>
+    <path
+      class="fit-speedometer-value"
+      d="M 10 50 A 40 40 0 0 1 90 50"
+      pathLength="100"
+      stroke-dasharray="{{ score_100|default:0 }} 100"
+    ></path>
+  </svg>
+  <div class="fit-speedometer-score">{{ score_100|default:0 }}/100</div>
+  <div class="fit-speedometer-caption">Fit Score</div>
+</div>
+{% endwith %}

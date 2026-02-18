@@ -79,3 +79,51 @@
     padding: 1rem;
   }
 }
+
+.fit-speedometer {
+  --fit-meter-size: 160px;
+  width: var(--fit-meter-size);
+  text-align: center;
+}
+
+.fit-speedometer svg {
+  width: var(--fit-meter-size);
+  height: calc(var(--fit-meter-size) * 0.6);
+  display: block;
+}
+
+.fit-speedometer-track {
+  fill: none;
+  stroke: #d8dee5;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.fit-speedometer-value {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.fit-speedometer-low .fit-speedometer-value {
+  stroke: #dc3545;
+}
+
+.fit-speedometer-medium .fit-speedometer-value {
+  stroke: #f59f00;
+}
+
+.fit-speedometer-high .fit-speedometer-value {
+  stroke: #198754;
+}
+
+.fit-speedometer-score {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-top: -0.25rem;
+}
+
+.fit-speedometer-caption {
+  color: #6c757d;
+  font-size: 0.8rem;
+}

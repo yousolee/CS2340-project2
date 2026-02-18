@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -137,3 +140,15 @@ STATICFILES_DIRS = [ BASE_DIR / 'jobsfinder/static/',
 # Media files (for uploaded resumes)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Recommender configuration
+RECOMMENDER_ENABLED = True
+RECOMMENDER_TOP_N = 200
+RECOMMENDER_TOP_K = 8
+RECOMMENDER_CACHE_TTL = 30 * 60
+RECOMMENDER_EMBEDDING_PROVIDER = os.getenv('RECOMMENDER_EMBEDDING_PROVIDER', 'cohere')
+RECOMMENDER_EMBEDDING_DIM = int(os.getenv('RECOMMENDER_EMBEDDING_DIM', '1024'))
+RECOMMENDER_COHERE_API_URL = os.getenv('RECOMMENDER_COHERE_API_URL', 'https://api.cohere.com/v2/embed')
+RECOMMENDER_COHERE_API_KEY = os.getenv("COHERE_API_KEY", "")
+RECOMMENDER_COHERE_MODEL = os.getenv('RECOMMENDER_COHERE_MODEL', 'embed-v4.0')
+RECOMMENDER_COHERE_INPUT_TYPE = os.getenv('RECOMMENDER_COHERE_INPUT_TYPE', 'search_document')

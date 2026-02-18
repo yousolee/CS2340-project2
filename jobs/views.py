@@ -4,9 +4,12 @@ from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import Recruiter
+from accounts.utils import is_job_seeker as is_job_seeker_user
+from profiles.models import Profile
 
 from .forms import JobCreateForm, JobSearchForm
 from .models import Job
+from .recommendations.service import score_job_fit_for_profile
 
 
 def get_recruiter(user):
@@ -63,9 +66,18 @@ def job_detail(request, job_id):
     recruiter = get_recruiter(request.user)
     job = get_object_or_404(Job, pk=job_id)
     can_edit_job = recruiter is not None and job.posted_by_id == recruiter.id
+    fit_score = None
+    if is_job_seeker_user(request.user):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        try:
+            fit_score = score_job_fit_for_profile(profile.id, job.id)
+        except Exception:
+            fit_score = None
+
     template_data = {
         'title': f"{job.title} - JobsFinder",
         'job': job,
+        'fit_score': fit_score,
         'can_edit_job': can_edit_job,
         'can_view_applications': can_edit_job,
         'application_count': job.applications.count() if can_edit_job else 0,
