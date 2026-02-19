@@ -80,7 +80,6 @@ def get_embedding_provider() -> EmbeddingProvider:
 
     if provider_name == "cohere":
         api_key = getattr(settings, "RECOMMENDER_COHERE_API_KEY", "")
-        print("API KEY:", api_key[:4] + "..." if api_key else "(none)")
         model = getattr(settings, "RECOMMENDER_COHERE_MODEL", "embed-english-v3.0")
         input_type = getattr(settings, "RECOMMENDER_COHERE_INPUT_TYPE", "search_document")
         if api_key and model:

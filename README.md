@@ -1,36 +1,96 @@
-# CS2340-project2
+# CS2340 Project 2: Job Finder
 
-## Implementing a Job Finder website
-### Context Description
+## Overview
+This is a Django web app that connects:
+- Job seekers looking for opportunities
+- Recruiters posting jobs and reviewing candidates
+- Administrators managing users and platform content
 
-Early-career job seekers often face challenges finding roles that match their skills, interests, and location preferences. At the same time, recruiters struggle to identify and evaluate applicants who are a good fit for their openings, especially when managing large pools of candidates.
+Core features include account roles, profile management, job postings, job applications, and recommendation scoring.
 
-Your team has been asked to design and build a web application that bridges this gap. The platform should serve as a meeting point between young professionals searching for opportunities and recruiters looking for talent. It should support creating and managing professional profiles, posting and exploring job opportunities, and enabling recruiters to search, track, and engage with applicants.
+## Local Setup and Run (Full Rundown)
 
-Because location plays a key role in employment, the platform should also integrate map-based features to help job seekers visualize opportunities geographically and recruiters understand applicant distribution.
+### 1. Prerequisites
+- Python 3.11+ (3.12 also works)
+- `pip`
+- `git`
 
-This project is intended to challenge you to think about multiple perspectives (considering Job seekers, Recruiters, and Administrators) while practicing core software engineering skills such as requirements analysis, system design, team collaboration, and web development. 
+### 2. Clone and enter the project
+```bash
+git clone <your-repo-url>
+cd CS2340-project2
+```
+
+### 3. Create and activate a virtual environment
+macOS/Linux:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Windows (PowerShell):
+```powershell
+py -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+### 4. Install dependencies
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 5. Configure environment variables
+Create a `.env` file in the project root:
+
+```env
+# Optional: enables Cohere-powered embeddings when set
+COHERE_API_KEY=
+
+# Optional recommender settings (defaults shown)
+RECOMMENDER_EMBEDDING_PROVIDER=cohere
+RECOMMENDER_EMBEDDING_DIM=1024
+RECOMMENDER_COHERE_MODEL=embed-v4.0
+RECOMMENDER_COHERE_INPUT_TYPE=search_document
+```
+
+Notes:
+- If `COHERE_API_KEY` is empty, recommendations still work using a local deterministic embedding fallback.
+- SQLite is used by default (`db.sqlite3`).
+
+### 6. Run database migrations
+```bash
+python manage.py migrate
+```
+
+### 7. Create an admin account (optional but recommended)
+```bash
+python manage.py createsuperuser
+```
+
+### 8. Start the development server
+```bash
+python manage.py runserver
+```
+
+Open: `http://127.0.0.1:8000/`
+
+If port 8000 is in use:
+```bash
+python manage.py runserver 8001
+```
+
+### 9. First-time app usage flow
+1. Go to `http://127.0.0.1:8000/accounts/signup` to create a user.
+2. Choose `Job Seeker` or `Recruiter` during signup.
+3. Log in at `http://127.0.0.1:8000/accounts/login/`.
+4. For admin features:
+   - Log in with a superuser account.
+   - Visit `http://127.0.0.1:8000/accounts/admin-dashboard/` or `http://127.0.0.1:8000/admin/`.
+
+### 10. Run tests
+```bash
+python manage.py test
+```
 
 
-### List of User Stories to included
-    As a Job Seeker, I want to create a profile with my headline, skills, education, work experience, and links so recruiters can learn about me.
-    As a Job Seeker, I want to search for jobs with filters (title, skills, location, salary range, remote/on-site, visa sponsorship) so I can find opportunities that match my needs.
-    As a Job Seeker, I want to apply to a job with one click and include a tailored note so my application feels personalized.
-    As a Job Seeker, I want to track the status of my applications (Applied → Review → Interview → Offer → Closed) so I know where I stand.
-    As a Job Seeker, I want to set privacy options on my profile so I control what recruiters can see.
-    As a Job Seeker, I want to receive recommendations for jobs based on my skills so I discover opportunities I might have missed.
-    As a Job Seeker, I want to view job postings on an interactive map so I can see which ones are near me.
-    As a Job Seeker, I want to filter jobs on the map by distance from my current location so I can prioritize nearby opportunities.
-    As a Job Seeker, I want to set a preferred commute radius (e.g., 10 miles) on the map so I only see jobs within a reasonable travel distance.
-    As a Recruiter, I want to post and edit job roles so candidates can apply to my openings.
-    As a Recruiter, I want to search for candidates by skills, location, and projects so I can find talent that fits my positions.
-    As a Recruiter, I want to organize applicants in a pipeline (e.g., a Kanban board) so I can easily manage hiring stages.
-    As a Recruiter, I want to message candidates inside the platform so I can contact them without the use of personal emails.
-    As a Recruiter, I want to email candidates through the platform so I can reach out to them through their personal emails.
-    As a Recruiter, I want to save a candidate search and get notified about new matches so I don’t have to repeat the same queries.
-    As a Recruiter, I want to receive candidate recommendations for my job postings so I find qualified applicants faster.
-    As a Recruiter, I want to pin my job posting’s office location on a map so candidates know exactly where the job is based.
-    As a Recruiter, I want to see clusters of applicants by location on a map so I understand where most candidates are coming from.
-    As an Administrator, I want to manage users and roles so the platform remains fair and safe.
-    As an Administrator, I want to moderate or remove job posts so the platform stays free of spam or abuse.
-    As an Administrator, I want to export data (CSV) for reporting purposes so stakeholders can analyze usage.

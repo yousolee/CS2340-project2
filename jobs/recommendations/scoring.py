@@ -77,7 +77,6 @@ def recency_boost(posted_date: datetime | None, now: datetime) -> float:
 
 
 def compute_fit_score(features: PairFeatures) -> float:
-    print(f"Main part of score: exp_desc={features.exp_desc_embedding:.4f}, title={features.title_embedding:.4f}, skills={features.skills_embedding:.4f}, summary={features.summary_desc_embedding:.4f}")
     raw = (
         0.60 * features.exp_desc_embedding
         + 0.20 * features.title_embedding

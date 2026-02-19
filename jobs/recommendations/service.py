@@ -173,11 +173,8 @@ def ensure_profile_field_embeddings(
     selected = set(fields or set())
 
     experience_doc = build_profile_experience_document(profile)
-    print(f"Experience for profile {profile.pk}: {experience_doc}")
     summary_skills_doc = build_profile_summary_skills_document(profile)
-    print(f"Summary for profile {profile.pk}: {summary_skills_doc}")
     title_doc = build_profile_title_document(profile)
-    print(f"Title for profile {profile.pk}: {title_doc}")
 
     experience_vector, experience_hash = _selective_embedding_record(
         ProfileExperienceEmbedding,
@@ -211,7 +208,6 @@ def ensure_profile_field_embeddings(
         retrieval_hash = experience_hash
         retrieval_source = "experience"
 
-    print(f"Profile {profile.pk} embedding: experience_hash={experience_hash[:8]}, summary_skills_hash={summary_skills_hash[:8]}, title_hash={title_hash[:8]}, retrieval_source={retrieval_source}")
     return ProfileFieldEmbeddings(
         experience_vector=experience_vector,
         summary_skills_vector=summary_skills_vector,

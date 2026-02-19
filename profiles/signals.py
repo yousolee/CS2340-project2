@@ -19,7 +19,6 @@ def create_profile(sender, instance, created, **kwargs):
 
 def _refresh_profile_embedding_fields(profile: Profile, fields: set[str]):
     try:
-        print(f"Refreshing embedding for profile {profile.pk}")
         ensure_profile_field_embeddings(profile, fields=fields)
     except Exception:  # pragma: no cover - embedding failures should not block writes
         logger.exception(
