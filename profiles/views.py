@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from applications.models import Application
 
 from accounts.utils import is_job_seeker
 from .forms import (
@@ -11,6 +12,7 @@ from .forms import (
     ExperienceFormSet,
     LinksProfileForm,
     SkillsProfileForm,
+    PrivacyProfileForm,
 )
 from .models import Profile
 
@@ -23,6 +25,7 @@ SECTION_LABELS = {
     "experience": "Experience",
     "education": "Education",
     "links": "Links",
+    "privacy": "Privacy",
 }
 
 PROFILE_SECTION_FORMS = {
@@ -30,6 +33,7 @@ PROFILE_SECTION_FORMS = {
     "about": AboutProfileForm,
     "skills": SkillsProfileForm,
     "links": LinksProfileForm,
+    "privacy": PrivacyProfileForm,
 }
 
 @login_required
@@ -98,6 +102,17 @@ def edit_profile_section(request, section):
 def public_profile(request, username):
     user = get_object_or_404(User, username=username)
     profile, _ = Profile.objects.get_or_create(user=user)
+
+    if request.user != user:
+        if profile.visibility == Profile.Visibility.HIDDEN:
+            has_application = False
+            try:
+                has_application = Application.objects.filter(applicant=user, job__posted_by=request.user.recruiter_profile).exists()
+            except Exception:
+                pass
+            if not has_application:
+                raise Http404('Profile is not available')          
+
     template_data = {
         "title": f"{user.username}'s Profile",
         "profile": profile,
