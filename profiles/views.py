@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from applications.models import Application
+from django.urls import reverse
 
 from accounts.utils import is_job_seeker
 from .forms import (
@@ -12,7 +13,6 @@ from .forms import (
     ExperienceFormSet,
     LinksProfileForm,
     SkillsProfileForm,
-    PrivacyProfileForm,
 )
 from .models import Profile
 
@@ -25,7 +25,6 @@ SECTION_LABELS = {
     "experience": "Experience",
     "education": "Education",
     "links": "Links",
-    "privacy": "Privacy",
 }
 
 PROFILE_SECTION_FORMS = {
@@ -33,7 +32,6 @@ PROFILE_SECTION_FORMS = {
     "about": AboutProfileForm,
     "skills": SkillsProfileForm,
     "links": LinksProfileForm,
-    "privacy": PrivacyProfileForm,
 }
 
 @login_required
@@ -121,3 +119,15 @@ def public_profile(request, username):
         "educations": profile.educations.all(),
     }
     return render(request, "profiles/public_profile.html", {"template_data": template_data})
+
+@login_required
+def toggle_visibility(request):
+    if not is_job_seeker(request.user):
+        return HttpResponseForbidden()
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    if profile.visibility == Profile.Visibility.OPEN:
+        profile.visibility = Profile.Visibility.HIDDEN
+    else:
+        profile.visibility = Profile.Visibility.OPEN
+    profile.save()
+    return redirect(reverse('accounts.dashboard'))

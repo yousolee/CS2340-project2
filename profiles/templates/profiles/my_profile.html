@@ -122,18 +122,6 @@
     {% endif %}
   </div>
 
-  <div class="profile-card mb-4">
-    <div class="d-flex justify-content-between align-items-start mb-2">
-      <h5 class="mb-0">Privacy</h5>
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'profiles.edit_section' 'privacy' %}" aria-label="Edit Privacy Settings">
-        <i class="fas fa-pen"></i>
-      </a>
-    </div>
-    <p class="mb-0 text-muted">
-      Visibility: <strong>{{ template_data.profile.get_visibility_display }}</strong>
-    </p>
-  </div>
-
   <div class="mt-3">
     <span class="text-muted">
       Public link:
