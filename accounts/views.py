@@ -164,6 +164,7 @@ def dashboard(request):
 
         template_data = {
             'title': 'Job Seeker Dashboard',
+            'profile': profile,
             'recent_applications': recent_applications,
             'notification_count': len(unread_notifications),
             'recommended_jobs': recommended_jobs,
