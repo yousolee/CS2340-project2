@@ -201,7 +201,7 @@ def candidate_search(request):
 
     if request.method == 'GET':
         form = CandidateSearchForm(request.GET)
-        profiles = Profile.objects.filter(role=Profile.Role.JOB_SEEKER).select_related('user')
+        profiles = Profile.objects.filter(role=Profile.Role.JOB_SEEKER, visibility=Profile.Visibility.OPEN).select_related('user')
 
         if form.is_valid():
             if form.cleaned_data.get('skills'):

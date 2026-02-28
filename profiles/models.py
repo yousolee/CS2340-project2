@@ -7,6 +7,16 @@ class Profile(models.Model):
     class Role(models.TextChoices):
         JOB_SEEKER = "job_seeker", "Job Seeker"
         RECRUITER = "recruiter", "Recruiter"
+    
+    class Visibility(models.TextChoices):
+        OPEN = 'open', 'Open to recruiters'
+        HIDDEN = 'hidden', 'Hidden'
+
+    visibility = models.CharField(
+        max_length=10,
+        choices=Visibility.choices,
+        default=Visibility.OPEN
+    )
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     role = models.CharField(
@@ -29,6 +39,8 @@ class Profile(models.Model):
         help_text="One link per line (LinkedIn, GitHub, portfolio, etc.)",
     )
     updated_at = models.DateTimeField(auto_now=True)
+
+
 
     def __str__(self):
         return f"{self.user.username}'s profile"

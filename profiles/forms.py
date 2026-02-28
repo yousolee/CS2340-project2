@@ -137,3 +137,11 @@ EducationFormSet = inlineformset_factory(
     extra=1,
     can_delete=True,
 )
+
+class PrivacyProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['visibility']
+        widgets = {
+            'visibility': forms.RadioSelect,
+        }
