@@ -127,3 +127,11 @@
   color: #6c757d;
   font-size: 0.8rem;
 }
+
+.card {
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}

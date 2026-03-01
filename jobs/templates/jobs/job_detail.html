@@ -7,15 +7,16 @@
     <a class="text-decoration-none" href="{% url 'jobs.list' %}">&larr; Back to all jobs</a>
   </div>
 
-  <div class="card">
-    <div class="card-body">
-      <div class="d-flex flex-wrap justify-content-between align-items-start">
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start mb-3">
         <div>
-          <h3 class="mb-1">{{ template_data.job.title }}</h3>
-          <div class="text-muted">{{ template_data.job.company }}</div>
+          <h3 class="mb-1 fw-bold">{{ template_data.job.title }}</h3>
+          <div class="text-muted fs-6">{{ template_data.job.company }}</div>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <div class="text-muted">{{ template_data.job.posted_date|date:"M d, Y" }}</div>
+        <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+          <div class="text-muted small">{{ template_data.job.posted_date|date:"M d, Y" }}</div>
           {% if user.is_authenticated and is_job_seeker %}
             <a class="btn btn-primary btn-sm" href="{% url 'applications:apply' template_data.job.id %}">Apply</a>
           {% endif %}
@@ -30,15 +31,34 @@
         </div>
       </div>
 
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <span class="badge rounded-pill bg-light text-dark border">
+          <i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ template_data.job.location }}
+        </span>
+        <span class="badge rounded-pill bg-light text-dark border">
+          <i class="fas fa-laptop-house me-1 text-primary"></i>{{ template_data.job.get_mode_display }}
+        </span>
+        {% if template_data.job.min_salary and template_data.job.max_salary %}
+          <span class="badge rounded-pill bg-light text-dark border">
+            <i class="fas fa-dollar-sign me-1 text-success"></i>${{ template_data.job.min_salary|floatformat:0|intcomma }} – ${{ template_data.job.max_salary|floatformat:0|intcomma }}
+          </span>
+        {% endif %}
+        {% if template_data.job.visa_sponsorship %}
+          <span class="badge rounded-pill bg-light text-dark border">
+            <i class="fas fa-passport me-1 text-primary"></i>Visa Sponsored
+          </span>
+        {% endif %}
+      </div>
+
+      <p class="text-muted small mb-3"><strong class="text-dark">Skills:</strong> {{ template_data.job.skills }}</p>
+
       {% if template_data.fit_score %}
-        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center p-3 mb-3 rounded" style="background-color: #f8f9fa;">
           <div>
-            <h5 class="mb-1">Your Match Score</h5>
+            <h6 class="fw-bold mb-1">Your Match Score</h6>
             <div class="text-muted small">This score reflects profile-to-job fit quality.</div>
             {% if template_data.fit_score.profile_is_sparse %}
-              <div class="text-warning small mt-1">
-                Add more profile details to improve match accuracy.
-              </div>
+              <div class="text-warning small mt-1">Add more profile details to improve match accuracy.</div>
             {% endif %}
           </div>
           <div>
@@ -49,20 +69,10 @@
 
       <hr />
 
-      <p class="mb-2"><strong>Location:</strong> {{ template_data.job.location }}</p>
-      <p class="mb-2"><strong>Work Mode:</strong> {{ template_data.job.get_mode_display }}</p>
-      {% if template_data.job.min_salary and template_data.job.max_salary %}
-        <p class="mb-2"><strong>Salary:</strong>
-          ${{ template_data.job.min_salary|floatformat:2|intcomma }} - ${{ template_data.job.max_salary|floatformat:2|intcomma }}
-        </p>
-      {% endif %}
-      <p class="mb-2"><strong>Skills:</strong> {{ template_data.job.skills }}</p>
-      <p class="mb-3"><strong>Visa Sponsorship:</strong> {% if template_data.job.visa_sponsorship %}Yes{% else %}No{% endif %}</p>
+      <h6 class="fw-bold mb-2">Description</h6>
+      <p class="mb-0 text-muted">{{ template_data.job.description }}</p>
 
-      <h5>Description</h5>
-      <p class="mb-0">{{ template_data.job.description }}</p>
     </div>
   </div>
-
 </div>
 {% endblock content %}
