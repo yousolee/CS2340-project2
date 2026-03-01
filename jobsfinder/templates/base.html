@@ -19,13 +19,8 @@
   </head>
   <body class="d-flex flex-column min-vh-100">
     <!-- Header -->
-     <nav class="p-3 navbar navbar-dark bg-dark navbar-expand-lg">
-      <div class="container">
-        <a class="navbar-brand"
-           href="{% url 'home.index' %}">
-          <img src="{% static 'img/logoJF.jpg' %}" alt="logo"
-               height="40" />
-        </a>
+      <nav class="p-3 navbar navbar-dark navbar-expand-lg" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">      <div class="container">
+        <a class="navbar-brand fw-bold text-white" href="{% url 'home.index' %}">Jobs Finder</a>
         <button class="navbar-toggler" type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#navbarNavAltMarkup"
@@ -38,7 +33,6 @@
              id="navbarNavAltMarkup">
           <div class="navbar-nav ms-auto navbar-ml">
             <a class="nav-link" href="{% url 'jobs.list' %}">Jobs</a>
-            <a class="nav-link" href="{% url 'home.about' %}">About</a>
           <div class="vr bg-white mx-2 d-none d-lg-block"></div>
           {% if user.is_authenticated %}
             <a class="nav-link" href="{% url 'accounts.dashboard' %}">Dashboard</a>
@@ -70,75 +64,14 @@
       {% block content %}
       {% endblock content %}
     </div>
+    
     <!-- Footer -->
-      <section class="p-2 ms-footer d-none d-md-block">
-      <div class="container">
-        <div class="row mt-3 text-white">
-          <div class="col-md-6 col-lg-6 col-xl-6
-               mx-auto mb-4">
-            <b>JOBS FINDER</b>
-            <hr />
-            <p>
-              Welcome to Job Finder, your number one source
-              for job listings. We're dedicated to giving you
-              the very best job search experience, with a focus in connecting
-              job seekers with their ideal career opportunities.
-            </p>
-          </div>
-          <div class="col-md-3 col-lg-3 col-xl-3
-               mx-auto mb-4">
-            <b>LINKS</b>
-            <hr />
-            <p><a class="nav-link"
-              href="{% url 'jobs.list' %}">
-              Jobs
-            </a></p>
-            {% if user.is_authenticated %}
-              <p><a class="nav-link" href="{% url 'accounts.dashboard' %}">Dashboard</a></p>
-              {% if is_recruiter or is_job_seeker %}
-                <p><a class="nav-link" href="{% url 'applications:list' %}">Applications</a></p>
-              {% endif %}
-              {% if is_admin %}
-                <p><a class="nav-link text-warning" href="{% url 'accounts.admin_dashboard' %}">Admin Dashboard</a></p>
-              {% endif %}
-              {% if is_recruiter %}
-                <p><a class="nav-link" href="{% url 'jobs.my_postings' %}">My Job Postings</a></p>
-              {% else %}
-                <p><a class="nav-link" href="{% url 'profiles.me' %}">My Profile</a></p>
-              {% endif %}
-          {% endif %}
-            <p><a class="nav-link"
-              href="{% url 'home.about' %}">
-              About
-            </a></p>
-          </div>
-          <div class="col-md-3 col-lg-3 col-xl-3 mx-auto
-               mb-4">
-            <b>CONTACT</b>
-            <hr />
-            <p><i class="fas fa-home me-2"></i>
-               Atlanta, GA
-            </p>
-            <p><i class="fas fa-phone me-2"></i>
-              +1 234 567 8910
-            </p>
-          </div>
-        </div>
+    <footer style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);" class="text-white py-4">
+      <div class="container d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Jobs Finder</span>
+        <small class="text-white-50">© 2026 Jobs Finder. Designed by Youso Lee, Ruhan Patel, Austin McElheny.</small>
       </div>
-    </section>
-    <section class="p-2 ms-footer-bottom bg-dark">
-      <div class="container d-flex
-           justify-content-between">
-        <div class="me-5 text-white">
-          <span>DESIGNED BY
-            <a target="_blank">Youso Lee, Ruhan Patel, Austin McElheny</a> 
-          </span>
-        </div>
-        <div class="text-white">
-          <span>© Copyright - 2026</span>
-        </div>
-      </div>
-    </section>
+    </footer>
     <!-- Footer -->
   </body>
 </html>

@@ -1,36 +1,142 @@
 {% extends 'base.html' %}
 {% block content %}
-<header class="masthead bg-index text-white text-center
-           py-4">
-  <div class="container d-flex align-items-center flex-column pt-2">
-    <h2>Job Finder</h2>
-    <p>Find the perfect job for you!</p>
-  </div>
-</header>
-<div class="p-3">
-  <div class="container">
-    <div class="row mt-3">
-      <div class="col mx-auto text-center mb-3">
-        <h4>Welcome to Job Finder!!</h4>
-        <div class="mt-3">
-          {% if user.is_authenticated %}
-          <a class="btn btn-success me-2"
-             href="{% url 'accounts.dashboard' %}">
-            Go to Dashboard
-          </a>
-          {% endif %}
 
-          <a class="btn btn-primary me-2"
-             href="{% url 'jobs.list' %}">
-            Browse Jobs
-          </a>
-
-          <a class="btn btn-outline-primary"
-             href="{% url 'jobs.list' %}">
-            Search / Filter
-          </a>
-        </div>
+<div class="text-dark py-5" style="background: #ffffff;">
+  <div class="container py-5 text-center">
+    <h1 class="display-4 fw-bold mb-3">Find Your Next Opportunity</h1>
+    <p class="lead text-muted mb-4">Connect with top employers and land your ideal job.</p>
+    <form method="GET" action="{% url 'jobs.list' %}" class="mt-4">
+      <div class="input-group input-group-lg mx-auto" style="max-width: 600px;">
+        <input type="text" name="title" class="form-control" placeholder="Search jobs by title...">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="fas fa-search me-2"></i>Search
+        </button>
       </div>
+    </form>
+  </div>
+
+  <div class="d-flex justify-content-center gap-5 mt-4 text-muted">
+    <div class="text-center">
+      <h4 class="fw-bold text-dark mb-0">{{ template_data.job_count }}</h4>
+      <small>Jobs Available</small>
+    </div>
+    <div class="text-center">
+      <h4 class="fw-bold text-dark mb-0">{{ template_data.candidate_count }}</h4>
+      <small>Candidates</small>
+    </div>
+    <div class="text-center">
+      <h4 class="fw-bold text-dark mb-0">{{ template_data.company_count }}</h4>
+      <small>Companies</small>
+    </div>
+  </div>
+</div>
+
+<div class="py-5" style="background-color: #f8f9fa;">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-md-4 text-center">
+        <i class="fas fa-briefcase fa-4x text-primary mb-3"></i>
+        <h5 class="fw-bold">Browse Jobs</h5>
+        <p class="text-muted">Explore hundreds of listings from employers across various fields.</p>
+      </div>
+      <div class="col-md-4 text-center">
+        <i class="fas fa-user-circle fa-4x text-primary mb-3"></i>
+        <h5 class="fw-bold">Build Your Profile</h5>
+        <p class="text-muted">Showcase your skills and experience to stand out to recruiters.</p>
+      </div>
+      <div class="col-md-4 text-center">
+        <i class="fas fa-handshake fa-4x text-primary mb-3"></i>
+        <h5 class="fw-bold">Get Hired</h5>
+        <p class="text-muted">Apply with one click and track your applications with live updates and notifications.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if template_data.recent_jobs %}
+<div class="container py-5">
+  <h4 class="text-center mb-4 fw-bold">Latest Opportunities</h4>
+  <div id="jobsCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-inner">
+      {% for job in template_data.recent_jobs %}
+        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+          <div class="card mx-auto shadow-sm" style="max-width: 600px;">
+            <div class="card-body text-center py-5">
+              <h5 class="card-title fw-bold">{{ job.title }}</h5>
+              <h6 class="text-muted mb-3">{{ job.company }}</h6>
+              <p class="mb-1"><i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ job.location }}</p>
+              <p class="mb-3"><i class="fas fa-laptop-house me-2 text-primary"></i>{{ job.get_mode_display }}</p>
+              {% if job.min_salary or job.max_salary %}
+                <p class="mb-3 text-success fw-semibold">
+                  <!--<i class="fas fa-dollar-sign me-1"></i> -->
+                  {% if job.min_salary and job.max_salary %}
+                    ${{ job.min_salary|floatformat:0 }} - ${{ job.max_salary|floatformat:0 }}
+                  {% elif job.min_salary %}
+                    From ${{ job.min_salary|floatformat:0 }}
+                  {% else %}
+                    Up to ${{ job.max_salary|floatformat:0 }}
+                  {% endif %}
+                </p>
+              {% endif %}
+              <a href="{% url 'jobs.detail' job.id %}" class="btn btn-primary">View Job</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <button class="carousel-control-prev" type="button" data-bs-target="#jobsCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" style="filter: invert(1)"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#jobsCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" style="filter: invert(1)"></span>
+    </button>
+
+    <div class="carousel-indicators position-relative mt-3">
+      {% for job in template_data.recent_jobs %}
+        <button type="button" data-bs-target="#jobsCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+          {% if forloop.first %}class="active bg-primary"{% else %}class="bg-secondary"{% endif %}>
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="container py-5">
+  <h4 class="text-center fw-bold mb-4">Why Jobs Finder?</h4>
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <ul class="list-unstyled">
+        <li class="d-flex align-items-start mb-4">
+          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+          <div>
+            <h6 class="fw-bold mb-1">AI-Powered Job Matching</h6>
+            <p class="text-muted mb-0">Unlike traditional job boards, our platform uses AI to score how well each job fits your profile. Now, you can spend less time searching and more time applying.</p>
+          </div>
+        </li>
+        <li class="d-flex align-items-start mb-4">
+          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+          <div>
+            <h6 class="fw-bold mb-1">Real-Time Application Tracking</h6>
+            <p class="text-muted mb-0">Track every application through each stage and get alerted the moment a recruiter makes a decision.</p>
+          </div>
+        </li>
+        <li class="d-flex align-items-start mb-4">
+          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+          <div>
+            <h6 class="fw-bold mb-1">Privacy Controls</h6>
+            <p class="text-muted mb-0">You decide who sees your profile. Easily hide yourself from recruiters while still being able to apply to any job you want.</p>
+          </div>
+        </li>
+        <li class="d-flex align-items-start mb-4">
+          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+          <div>
+            <h6 class="fw-bold mb-1">Direct Recruiter Access</h6>
+            <p class="text-muted mb-0">Every job posting comes directly from a recruiter on our platform, so there are no third-party collectors or outdated listings.</p>
+          </div>
+        </li>
+      </ul>
     </div>
   </div>
 </div>
