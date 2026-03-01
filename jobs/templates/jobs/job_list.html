@@ -27,25 +27,31 @@
               <div class="d-flex justify-content-between align-items-start">
                 <div>
                   <h5 class="card-title mb-1">
-                    <a class="text-decoration-none" href="{% url 'jobs.detail' job.id %}">
-                      {{ job.title }}
-                    </a>
+                    <a class="text-decoration-none" href="{% url 'jobs.detail' job.id %}">{{ job.title }}</a>
                   </h5>
-                  <div class="text-muted">{{ job.company }}</div>
+                  <div class="text-muted mb-2">{{ job.company }}</div>
+                  <div class="d-flex flex-wrap gap-2">
+                    <span class="badge rounded-pill bg-light text-dark border">
+                      <i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ job.location }}
+                    </span>
+                    <span class="badge rounded-pill bg-light text-dark border">
+                      <i class="fas fa-laptop-house me-1 text-primary"></i>{{ job.get_mode_display }}
+                    </span>
+                    {% if job.min_salary and job.max_salary %}
+                      <span class="badge rounded-pill bg-light text-dark border">
+                        <i class="fas fa-dollar-sign me-1 text-success"></i>${{ job.min_salary|floatformat:0|intcomma }} – ${{ job.max_salary|floatformat:0|intcomma }}
+                      </span>
+                    {% endif %}
+                    {% if job.visa_sponsorship %}
+                      <span class="badge rounded-pill bg-light text-dark border">
+                        <i class="fas fa-passport me-1 text-primary"></i>Visa Sponsored
+                      </span>
+                    {% endif %}
+                  </div>
                 </div>
                 <div class="text-muted small">{{ job.posted_date|date:"M d, Y" }}</div>
               </div>
-
-              <div class="mt-2">
-                <span class="me-3"><strong>Location:</strong> {{ job.location }}</span>
-                <span class="me-3"><strong>Mode:</strong> {{ job.get_mode_display }}</span>
-                {% if job.min_salary and job.max_salary %}
-                  <span class="me-3"><strong>Salary:</strong> ${{ job.min_salary|floatformat:2|intcomma }} - ${{ job.max_salary|floatformat:2|intcomma }}</span>
-                {% endif %}
-                <span><strong>Visa:</strong> {% if job.visa_sponsorship %}Yes{% else %}No{% endif %}</span>
-              </div>
-
-              <p class="card-text mt-3 mb-0">{{ job.description|truncatewords:30 }}</p>
+              <p class="card-text mt-3 mb-0 text-muted small">{{ job.description|truncatewords:30 }}</p>
             </div>
           </div>
         </div>
