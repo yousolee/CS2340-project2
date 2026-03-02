@@ -40,6 +40,7 @@ from .recommendations.service import (
     ensure_job_field_embeddings,
     ensure_profile_field_embeddings,
     recommend_jobs_for_profile,
+    recommend_profiles_for_job,
     score_job_fit_for_profile,
 )
 
@@ -266,6 +267,34 @@ class RecommendationServiceTests(TestCase):
         refreshed = JobTitleEmbedding.objects.get(job=self.matching_job)
         self.assertEqual(len(refreshed.embedding), int(settings.RECOMMENDER_EMBEDDING_DIM))
         self.assertIn("title_embedding", result.components)
+
+    def test_recommend_profiles_for_job_excludes_hidden_profiles(self):
+        hidden_user = User.objects.create_user(
+            username="hidden_seeker", password="ComplexPass123!"
+        )
+        hidden_profile = hidden_user.profile
+        hidden_profile.summary = "Python backend engineer"
+        hidden_profile.skills = "Python, Django, REST"
+        hidden_profile.location = "Atlanta, GA"
+        hidden_profile.visibility = hidden_profile.Visibility.HIDDEN
+        hidden_profile.save()
+
+        Experience.objects.create(
+            profile=hidden_profile,
+            company="Hidden Co",
+            title="Software Engineer",
+            start_date="2023-01-01",
+            description="Built backend APIs",
+            location="Atlanta, GA",
+            location_type="HYBRID",
+        )
+
+        recommendations = recommend_profiles_for_job(self.matching_job.id, k=8)
+        profile_ids = [item.profile.id for item in recommendations]
+
+        self.assertIn(self.profile.id, profile_ids)
+        self.assertNotIn(hidden_profile.id, profile_ids)
+        self.assertTrue(all(0 <= item.fit_score_100 <= 100 for item in recommendations))
 
 
 class RecommendationViewTests(TestCase):

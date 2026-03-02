@@ -12,7 +12,7 @@ from django.shortcuts import redirect, render
 
 from applications.models import Application, Notification
 from jobs.models import Job
-from jobs.recommendations.service import recommend_jobs_for_profile
+from jobs.recommendations.service import recommend_jobs_for_profile, recommend_profiles_for_job
 from profiles.models import Profile
 
 from .models import Recruiter
@@ -196,39 +196,74 @@ def logout(request):
 @login_required
 @user_passes_test(is_recruiter_user)
 def candidate_search(request):
+    recruiter = request.user.recruiter_profile
+    recruiter_jobs = Job.objects.filter(posted_by=recruiter).order_by("-posted_date")
+    form = CandidateSearchForm(request.GET or None)
+    selected_recommended_job_id = (request.GET.get("recommended_job_id") or "").strip()
+
+    profiles = Profile.objects.none()
+    candidate_recommendations = []
+    selected_recommended_job = None
+    profile_count = 0
+
+    if selected_recommended_job_id:
+        selected_recommended_job = recruiter_jobs.filter(pk=selected_recommended_job_id).first()
+        if selected_recommended_job is None:
+            messages.warning(request, "Please choose a valid job from your postings.")
+        else:
+            try:
+                candidate_recommendations = recommend_profiles_for_job(
+                    selected_recommended_job.id,
+                    k=int(getattr(settings, "RECOMMENDER_TOP_K", 8)),
+                )
+                profile_count = len(candidate_recommendations)
+            except Exception:  # pragma: no cover - search page should not fail on recommendation errors
+                logger.exception(
+                    "Failed to load candidate recommendations for job %s",
+                    selected_recommended_job.id,
+                )
+                messages.error(
+                    request,
+                    "Could not generate candidate recommendations right now. Please try again.",
+                )
+    elif request.GET and form.is_valid():
+        profiles = (
+            Profile.objects.filter(
+                role=Profile.Role.JOB_SEEKER,
+                visibility=Profile.Visibility.OPEN,
+            )
+            .select_related("user")
+            .prefetch_related("experiences", "educations")
+        )
+
+        if form.cleaned_data.get('skills'):
+            skills_list = [skill.strip() for skill in form.cleaned_data['skills'].split(',')]
+            skill_query = Q()
+            for skill in skills_list:
+                skill_query |= Q(skills__icontains=skill)
+            profiles = profiles.filter(skill_query)
+
+        if form.cleaned_data.get('location'):
+            profiles = profiles.filter(location__icontains=form.cleaned_data['location'])
+
+        if form.cleaned_data.get('company'):
+            profiles = profiles.filter(experiences__company__icontains=form.cleaned_data['company']).distinct()
+
+        if form.cleaned_data.get('job_title'):
+            profiles = profiles.filter(experiences__title__icontains=form.cleaned_data['job_title']).distinct()
+
+        profile_count = profiles.count()
+
     template_data = {
         'title': 'Candidate Search',
+        'form': form,
+        'profiles': profiles,
+        'candidate_recommendations': candidate_recommendations,
+        'profile_count': profile_count,
+        'recruiter_jobs': recruiter_jobs,
+        'selected_recommended_job': selected_recommended_job,
+        'selected_recommended_job_id': selected_recommended_job_id,
     }
-
-    if request.method == 'GET':
-        form = CandidateSearchForm(request.GET)
-        profiles = Profile.objects.filter(role=Profile.Role.JOB_SEEKER, visibility=Profile.Visibility.OPEN).select_related('user')
-
-        if form.is_valid():
-            if form.cleaned_data.get('skills'):
-                skills_list = [skill.strip() for skill in form.cleaned_data['skills'].split(',')]
-                skill_query = Q()
-                for skill in skills_list:
-                    skill_query |= Q(skills__icontains=skill)
-                profiles = profiles.filter(skill_query)
-            
-            if form.cleaned_data.get('location'):
-                profiles = profiles.filter(location__icontains=form.cleaned_data['location'])
-            
-            if form.cleaned_data.get('company'):
-                profiles = profiles.filter(experiences__company__icontains=form.cleaned_data['company']).distinct()
-            
-            if form.cleaned_data.get('job_title'):
-                profiles = profiles.filter(experiences__title__icontains=form.cleaned_data['job_title']).distinct()
-            
-            template_data['form'] = form
-            template_data['profiles'] = profiles
-            template_data['profile_count'] = profiles.count()
-            return render(request, 'accounts/candidate_search.html', {'template_data': template_data})
-
-    template_data['form'] = CandidateSearchForm()
-    template_data['profiles'] = Profile.objects.none()
-    template_data['profile_count'] = 0
     return render(request, 'accounts/candidate_search.html', {'template_data': template_data})
 
 

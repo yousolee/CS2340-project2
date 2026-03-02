@@ -75,6 +75,12 @@ class RetrievedCandidate:
 
 
 @dataclass(frozen=True)
+class RetrievedProfile:
+    profile: Profile
+    retrieval_score: float
+
+
+@dataclass(frozen=True)
 class JobFitScore:
     fit_score_raw: float
     fit_score_100: int
@@ -86,6 +92,17 @@ class JobFitScore:
 @dataclass(frozen=True)
 class JobRecommendation:
     job: Job
+    fit_score_raw: float
+    fit_score_100: int
+    ranking_score: float
+    band: str
+    components: dict[str, float]
+    profile_is_sparse: bool
+
+
+@dataclass(frozen=True)
+class CandidateRecommendation:
+    profile: Profile
     fit_score_raw: float
     fit_score_100: int
     ranking_score: float
@@ -271,10 +288,25 @@ def _job_description_version() -> str:
     return str(int(latest.timestamp())) if latest else "none"
 
 
+def _profile_retrieval_version() -> str:
+    latest_experience = ProfileExperienceEmbedding.objects.aggregate(max_updated=Max("updated_at"))["max_updated"]
+    latest_summary = ProfileSummarySkillsEmbedding.objects.aggregate(max_updated=Max("updated_at"))["max_updated"]
+    experience_value = str(int(latest_experience.timestamp())) if latest_experience else "none"
+    summary_value = str(int(latest_summary.timestamp())) if latest_summary else "none"
+    return f"{experience_value}:{summary_value}"
+
+
 def _retrieval_cache_key(profile_id: int, profile_retrieval_hash: str) -> str:
     return (
         f"retrieval:{profile_id}:v2:"
         f"{(profile_retrieval_hash or '')[:12]}:{_job_description_version()}"
+    )
+
+
+def _candidate_retrieval_cache_key(job_id: int, job_description_hash: str) -> str:
+    return (
+        f"candidate-retrieval:{job_id}:v1:"
+        f"{(job_description_hash or '')[:12]}:{_profile_retrieval_version()}"
     )
 
 
@@ -451,6 +483,62 @@ def retrieve_candidate_jobs(
     return ordered_candidates
 
 
+def retrieve_candidate_profiles(
+    job: Job,
+    job_fields: JobFieldEmbeddings,
+    top_n: int | None = None,
+) -> list[RetrievedProfile]:
+    limit = top_n or _top_n()
+    cache_key = _candidate_retrieval_cache_key(job.id, job_fields.description_hash)
+    cached = cache.get(cache_key)
+
+    if cached is None:
+        retrieval_scores: list[tuple[int, float]] = []
+        open_profiles = (
+            Profile.objects.filter(
+                role=Profile.Role.JOB_SEEKER,
+                visibility=Profile.Visibility.OPEN,
+            )
+            .select_related("user")
+            .prefetch_related("experiences", "educations")
+        )
+        for profile in open_profiles:
+            profile_fields = _profile_fields_from_models(profile)
+            if profile_fields is None:
+                profile_fields = ensure_profile_field_embeddings(profile, force=True)
+
+            score = embedding_similarity_score(
+                profile_fields.retrieval_vector,
+                job_fields.description_vector,
+            )
+            retrieval_scores.append((profile.id, score))
+
+        retrieval_scores.sort(key=lambda item: item[1], reverse=True)
+        cached = retrieval_scores[: limit * 3]
+        cache.set(cache_key, cached, timeout=_cache_timeout())
+
+    filtered = cached[:limit]
+    profile_map = {
+        profile.id: profile
+        for profile in Profile.objects.filter(
+            id__in=[profile_id for profile_id, _ in filtered],
+            role=Profile.Role.JOB_SEEKER,
+            visibility=Profile.Visibility.OPEN,
+        )
+        .select_related("user")
+        .prefetch_related("experiences", "educations")
+    }
+
+    ordered_candidates: list[RetrievedProfile] = []
+    for profile_id, retrieval_score in filtered:
+        profile = profile_map.get(profile_id)
+        if profile is not None:
+            ordered_candidates.append(
+                RetrievedProfile(profile=profile, retrieval_score=float(retrieval_score))
+            )
+    return ordered_candidates
+
+
 def build_pair_features(
     profile: Profile,
     job: Job,
@@ -581,6 +669,45 @@ def recommend_jobs_for_profile(profile_id: int, k: int = 8) -> list[JobRecommend
         recommendations.append(
             JobRecommendation(
                 job=candidate.job,
+                fit_score_raw=fit.fit_score_raw,
+                fit_score_100=fit.fit_score_100,
+                ranking_score=ranking_score,
+                band=fit.band,
+                components=fit.components,
+                profile_is_sparse=fit.profile_is_sparse,
+            )
+        )
+
+    recommendations.sort(key=lambda item: item.ranking_score, reverse=True)
+    return recommendations[:k]
+
+
+def recommend_profiles_for_job(job_id: int, k: int = 8) -> list[CandidateRecommendation]:
+    if not getattr(settings, "RECOMMENDER_ENABLED", True):
+        return []
+
+    job = Job.objects.get(pk=job_id)
+    job_fields = _get_job_fields(job)
+    candidates = retrieve_candidate_profiles(job, job_fields, top_n=_top_n())
+
+    now = timezone.now()
+    recency_value = recency_boost(job.posted_date, now)
+    recommendations: list[CandidateRecommendation] = []
+    for candidate in candidates:
+        profile_fields = _get_profile_fields(candidate.profile)
+        key = _fit_cache_key(candidate.profile.id, job.id, profile_fields, job_fields)
+
+        fit_payload = cache.get(key)
+        if fit_payload is None:
+            features = build_pair_features(candidate.profile, job, profile_fields, job_fields, now)
+            fit_payload = _payload_from_features(features, profile_fields.profile_is_sparse)
+            cache.set(key, fit_payload, timeout=_cache_timeout())
+
+        fit = _fit_score_from_cache(fit_payload)
+        ranking_score = compute_ranking_score(fit.fit_score_raw, recency_value)
+        recommendations.append(
+            CandidateRecommendation(
+                profile=candidate.profile,
                 fit_score_raw=fit.fit_score_raw,
                 fit_score_100=fit.fit_score_100,
                 ranking_score=ranking_score,

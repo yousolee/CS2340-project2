@@ -110,3 +110,50 @@ class JobEditPermissionTests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.job.refresh_from_db()
         self.assertEqual(self.job.title, 'Backend Engineer')
+
+
+class JobDetailRecruiterActionTests(TestCase):
+    def setUp(self):
+        self.owner_user = User.objects.create_user(
+            username='detail_recruiter_owner',
+            password='ComplexPass123!',
+        )
+        self.owner_recruiter = Recruiter.objects.create(
+            user=self.owner_user,
+            company_name='Acme',
+        )
+        self.other_user = User.objects.create_user(
+            username='detail_recruiter_other',
+            password='ComplexPass123!',
+        )
+        self.other_recruiter = Recruiter.objects.create(
+            user=self.other_user,
+            company_name='Other Corp',
+        )
+        self.job = Job.objects.create(
+            title='Backend Engineer',
+            company='Acme',
+            location='Atlanta, GA',
+            description='Build APIs',
+            skills='Python, Django',
+            mode='hybrid',
+            posted_by=self.owner_recruiter,
+        )
+
+    def test_owner_sees_top_candidate_search_button(self):
+        self.client.login(username='detail_recruiter_owner', password='ComplexPass123!')
+        response = self.client.get(reverse('jobs.detail', kwargs={'job_id': self.job.id}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Search Top Candidates')
+        self.assertContains(
+            response,
+            f"{reverse('accounts.candidate_search')}?recommended_job_id={self.job.id}",
+        )
+
+    def test_non_owner_does_not_see_top_candidate_search_button(self):
+        self.client.login(username='detail_recruiter_other', password='ComplexPass123!')
+        response = self.client.get(reverse('jobs.detail', kwargs={'job_id': self.job.id}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Search Top Candidates')

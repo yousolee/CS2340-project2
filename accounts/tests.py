@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from applications.models import Application, Notification
 from jobs.models import Job
 from .models import Recruiter
-from profiles.models import Profile
+from profiles.models import Experience, Profile
 
 
 class SignupRoleTests(TestCase):
@@ -142,3 +142,96 @@ class DashboardNotificationTests(TestCase):
         self.client.get(reverse('applications:detail', kwargs={'pk': self.application.pk}))
         notification.refresh_from_db()
         self.assertTrue(notification.is_read)
+
+
+class CandidateSearchRecommendationTests(TestCase):
+    def setUp(self):
+        self.recruiter_user = User.objects.create_user(
+            username="candidate_recruiter",
+            password="ComplexPass123!",
+        )
+        self.recruiter = Recruiter.objects.create(
+            user=self.recruiter_user,
+            company_name="Acme",
+        )
+        self.other_recruiter_user = User.objects.create_user(
+            username="other_recruiter",
+            password="ComplexPass123!",
+        )
+        self.other_recruiter = Recruiter.objects.create(
+            user=self.other_recruiter_user,
+            company_name="OtherCo",
+        )
+        self.job = Job.objects.create(
+            title="Backend Engineer",
+            company="Acme",
+            location="Atlanta, GA",
+            description="Build backend APIs using Python and Django",
+            skills="Python, Django, REST",
+            mode="hybrid",
+            posted_by=self.recruiter,
+        )
+        self.other_job = Job.objects.create(
+            title="Data Analyst",
+            company="OtherCo",
+            location="Atlanta, GA",
+            description="Analyze reporting data",
+            skills="SQL, BI",
+            mode="onsite",
+            posted_by=self.other_recruiter,
+        )
+        self.seeker_user = User.objects.create_user(
+            username="candidate_seeker",
+            password="ComplexPass123!",
+        )
+        self.seeker_profile = self.seeker_user.profile
+        self.seeker_profile.summary = "Backend engineer with Django API experience"
+        self.seeker_profile.skills = "Python, Django, REST"
+        self.seeker_profile.location = "Atlanta, GA"
+        self.seeker_profile.save()
+        Experience.objects.create(
+            profile=self.seeker_profile,
+            company="Blue Sky",
+            title="Software Engineer",
+            start_date="2024-01-01",
+            description="Built APIs with Python and Django",
+            location="Atlanta, GA",
+            location_type="HYBRID",
+        )
+
+        self.client.login(username="candidate_recruiter", password="ComplexPass123!")
+
+    def test_candidate_search_shows_only_recruiter_jobs_in_dropdown(self):
+        response = self.client.get(reverse("accounts.candidate_search"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Backend Engineer")
+        self.assertNotContains(response, "Data Analyst")
+
+    def test_candidate_search_recommendations_for_selected_job(self):
+        response = self.client.get(
+            reverse("accounts.candidate_search"),
+            {"recommended_job_id": self.job.id},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Showing top candidates for")
+        self.assertContains(response, self.seeker_user.username)
+        self.assertRegex(response.content.decode("utf-8"), r"\b\d{1,3}/100\b")
+        self.assertContains(
+            response,
+            reverse("profiles.public", args=[self.seeker_user.username]),
+        )
+
+        template_data = response.context["template_data"]
+        self.assertEqual(template_data["selected_recommended_job"].id, self.job.id)
+        self.assertGreaterEqual(len(template_data["candidate_recommendations"]), 1)
+
+    def test_candidate_search_rejects_other_recruiter_job_id(self):
+        response = self.client.get(
+            reverse("accounts.candidate_search"),
+            {"recommended_job_id": self.other_job.id},
+        )
+        self.assertEqual(response.status_code, 200)
+
+        template_data = response.context["template_data"]
+        self.assertIsNone(template_data["selected_recommended_job"])
+        self.assertEqual(template_data["candidate_recommendations"], [])
