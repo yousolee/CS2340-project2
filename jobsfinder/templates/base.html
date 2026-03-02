@@ -47,8 +47,13 @@
             {% else %}
               <!--<a class="nav-link" href="{% url 'profiles.me' %}">My Profile</a> -->
             {% endif %}
-            <a class="nav-link" href="{% url 'messaging.inbox' %}">
+            <a class="nav-link position-relative" href="{% url 'messaging.inbox' %}">
               <i class="fas fa-envelope me-1"></i>Messages
+              {% if unread_messages %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.65rem;">
+                  {{ unread_messages }}
+                </span>
+              {% endif %}
             </a>
             <a class="nav-link" href="{% url 'accounts.logout' %}">
             Logout ({{ user.username }})
