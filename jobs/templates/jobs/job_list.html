@@ -2,119 +2,128 @@
 {% load humanize %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-    <div>
-      <h3 class="mb-1">All Jobs</h3>
-      <div class="text-muted">{{ template_data.job_count }} result{{ template_data.job_count|pluralize }}</div>
-    </div>
-    <div>
-      {% if template_data.can_post_jobs %}
-        <a class="btn btn-success me-2" href="{% url 'jobs.create' %}">Post a Job</a>
-      {% endif %}
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
-          <i class="fas fa-filter me-2"></i>Filter / Search
-        </button>    
-    </div>
-  </div>
-
-  {% if template_data.jobs %}
-    <div class="row">
-      {% for job in template_data.jobs %}
-        <div class="col-12 mb-3">
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <h5 class="card-title mb-1">
-                    <a class="text-decoration-none" href="{% url 'jobs.detail' job.id %}">{{ job.title }}</a>
-                  </h5>
-                  <div class="text-muted mb-2">{{ job.company }}</div>
-                  <div class="d-flex flex-wrap gap-2">
-                    <span class="badge rounded-pill bg-light text-dark border">
-                      <i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ job.location }}
-                    </span>
-                    <span class="badge rounded-pill bg-light text-dark border">
-                      <i class="fas fa-laptop-house me-1 text-primary"></i>{{ job.get_mode_display }}
-                    </span>
-                    {% if job.min_salary and job.max_salary %}
-                      <span class="badge rounded-pill bg-light text-dark border">
-                        <i class="fas fa-dollar-sign me-1 text-success"></i>${{ job.min_salary|floatformat:0|intcomma }} – ${{ job.max_salary|floatformat:0|intcomma }}
-                      </span>
-                    {% endif %}
-                    {% if job.visa_sponsorship %}
-                      <span class="badge rounded-pill bg-light text-dark border">
-                        <i class="fas fa-passport me-1 text-primary"></i>Visa Sponsored
-                      </span>
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="text-muted small">{{ job.posted_date|date:"M d, Y" }}</div>
-              </div>
-              <p class="card-text mt-3 mb-0 text-muted small">{{ job.description|truncatewords:30 }}</p>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="alert alert-info">No jobs have been posted yet.</div>
-  {% endif %}
-</div>
-<div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="filterModalLabel">Filter Jobs</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div style="min-height: 100vh; background: linear-gradient(180deg, #e8f0fe 0%, #ffffff 40%);">
+  <div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <h3 class="mb-1">All Jobs</h3>
+        <div class="text-muted">{{ template_data.job_count }} result{{ template_data.job_count|pluralize }}</div>
       </div>
-      <form method="GET" action="">
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="id_title" class="form-label">Job Title</label>
-            <input type="text" name="title" class="form-control" placeholder="Job title..." value="{{ request.GET.title }}">
-          </div>
-          <div class="mb-3">
-            <label for="id_skills" class="form-label">Skills</label>
-            <input type="text" name="skills" class="form-control" placeholder="Skills (e.g., Python, Django)..." value="{{ request.GET.skills }}">
-            <small class="form-text text-muted">Separate multiple skills with commas</small>
-          </div>
-          <div class="mb-3">
-            <label for="id_location" class="form-label">Location</label>
-            <input type="text" name="location" class="form-control" placeholder="Location..." value="{{ request.GET.location }}">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Salary Range</label>
-            <div class="row">
-              <div class="col-6">
-                <input type="number" name="min_salary" class="form-control" placeholder="Min salary" value="{{ request.GET.min_salary }}">
-              </div>
-              <div class="col-6">
-                <input type="number" name="max_salary" class="form-control" placeholder="Max salary" value="{{ request.GET.max_salary }}">
+      <div>
+        {% if template_data.can_post_jobs %}
+          <a class="btn text-white me-2" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);" href="{% url 'jobs.create' %}">Post a Job</a>
+        {% endif %}
+          <button type="button" class="btn text-white" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);" data-bs-toggle="modal" data-bs-target="#filterModal">
+            <i class="fas fa-filter me-2"></i>Filter / Search
+          </button>    
+      </div>
+    </div>
+
+    {% if template_data.jobs %}
+      <div class="row g-3">
+        {% for job in template_data.jobs %}
+          <div class="col-12 col-md-6">
+            <div class="card h-100 border-0 shadow-sm {% cycle 'bg-white' 'bg-light' %}" style="border-left: 4px solid #0f3460 !important;">
+              <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div class="d-flex gap-3 align-items-start">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 text-white fw-bold"
+                        style="width: 44px; height: 44px; background: linear-gradient(135deg, #1a1a2e, #0f3460); font-size: 1rem;">
+                      {{ job.company|first|upper }}
+                    </div>
+                    <div>
+                      <h6 class="card-title mb-1">
+                        <a class="text-decoration-none" href="{% url 'jobs.detail' job.id %}">
+                          {{ job.title }}
+                        </a>
+                      </h6>
+                      <div class="text-muted small">{{ job.company }}</div>
+                    </div>
+                  </div>
+                  <div class="text-muted small text-nowrap ms-2">{{ job.posted_date|date:"M d, Y" }}</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                  <span class="badge rounded-pill bg-light text-dark border">
+                    <i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ job.location }}
+                  </span>
+                  <span class="badge rounded-pill bg-light text-dark border">
+                    <i class="fas fa-laptop-house me-1 text-primary"></i>{{ job.get_mode_display }}
+                  </span>
+                  {% if job.min_salary and job.max_salary %}
+                    <span class="badge rounded-pill bg-light text-dark border">
+                      <i class="fas fa-dollar-sign me-1 text-success"></i>${{ job.min_salary|floatformat:0|intcomma }} – ${{ job.max_salary|floatformat:0|intcomma }}
+                    </span>
+                  {% endif %}
+                  {% if job.visa_sponsorship %}
+                    <span class="badge rounded-pill bg-light text-dark border">
+                      <i class="fas fa-passport me-1 text-primary"></i>Visa Sponsored
+                    </span>
+                  {% endif %}
+                </div>
+                <p class="card-text text-muted small mb-0">{{ job.description|truncatewords:20 }}</p>
               </div>
             </div>
           </div>
-          <div class="mb-3">
-            <label for="id_mode" class="form-label">Work Mode</label>
-            <select name="mode" class="form-select">
-              <option value="">Any</option>
-              <option value="remote" {% if request.GET.mode == 'remote' %}selected{% endif %}>Remote</option>
-              <option value="onsite" {% if request.GET.mode == 'onsite' %}selected{% endif %}>On-Site</option>
-              <option value="hybrid" {% if request.GET.mode == 'hybrid' %}selected{% endif %}>Hybrid</option>
-            </select>
-          </div>
-          <div class="mb-3 form-check">
-            <input type="checkbox" name="visa_sponsorship" class="form-check-input" id="id_visa_sponsorship" {% if request.GET.visa_sponsorship %}checked{% endif %}>
-            <label class="form-check-label" for="id_visa_sponsorship">
-              Visa Sponsorship Available
-            </label>
-          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-info">No jobs have been posted yet.</div>
+    {% endif %}
+  </div>
+  <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold" id="filterModalLabel">Filter Jobs</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-footer">
-          <a href="{% url 'jobs.list' %}" class="btn btn-secondary">Clear Filters</a>
-          <button type="submit" class="btn btn-primary">Apply Filters</button>
-        </div>
-      </form>
+        <form method="GET" action="">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="id_title" class="form-label">Job Title</label>
+              <input type="text" name="title" class="form-control" placeholder="Job title..." value="{{ request.GET.title }}">
+            </div>
+            <div class="mb-3">
+              <label for="id_skills" class="form-label">Skills</label>
+              <input type="text" name="skills" class="form-control" placeholder="Skills (e.g., Python, Django)..." value="{{ request.GET.skills }}">
+              <small class="form-text text-muted">Separate multiple skills with commas</small>
+            </div>
+            <div class="mb-3">
+              <label for="id_location" class="form-label">Location</label>
+              <input type="text" name="location" class="form-control" placeholder="Location..." value="{{ request.GET.location }}">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Salary Range</label>
+              <div class="row">
+                <div class="col-6">
+                  <input type="number" name="min_salary" class="form-control" placeholder="Min salary" value="{{ request.GET.min_salary }}">
+                </div>
+                <div class="col-6">
+                  <input type="number" name="max_salary" class="form-control" placeholder="Max salary" value="{{ request.GET.max_salary }}">
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="id_mode" class="form-label">Work Mode</label>
+              <select name="mode" class="form-select">
+                <option value="">Any</option>
+                <option value="remote" {% if request.GET.mode == 'remote' %}selected{% endif %}>Remote</option>
+                <option value="onsite" {% if request.GET.mode == 'onsite' %}selected{% endif %}>On-Site</option>
+                <option value="hybrid" {% if request.GET.mode == 'hybrid' %}selected{% endif %}>Hybrid</option>
+              </select>
+            </div>
+            <div class="mb-3 form-check">
+              <input type="checkbox" name="visa_sponsorship" class="form-check-input" id="id_visa_sponsorship" {% if request.GET.visa_sponsorship %}checked{% endif %}>
+              <label class="form-check-label" for="id_visa_sponsorship">
+                Visa Sponsorship Available
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer border-top">
+            <a href="{% url 'jobs.list' %}" class="btn btn-outline-secondary">Clear Filters</a>
+            <button type="submit" class="btn text-white" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">Apply Filters</button>        </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

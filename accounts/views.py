@@ -141,6 +141,12 @@ def dashboard(request):
 
     if role == 'job_seeker':
         profile, _ = Profile.objects.get_or_create(user=request.user)
+
+        applications = Application.objects.filter(applicant=request.user)
+        total_applications = applications.count()
+        pending_applications = applications.filter(status='UNDER_REVIEW').count()
+        interview_applications = applications.filter(status='INTERVIEW').count()
+
         recommended_jobs = []
         profile_is_sparse = False
         try:
@@ -178,6 +184,9 @@ def dashboard(request):
                 }
                 for notification in unread_notifications
             ],
+            'total_applications': total_applications,
+            'pending_applications': pending_applications,
+            'interview_applications': interview_applications,
         }
         return render(request, 'accounts/job_seeker_dashboard.html', {'template_data': template_data})
 

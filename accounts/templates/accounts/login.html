@@ -1,39 +1,73 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="min-vh-100 py-5" style="background-color: #f0f4f8; background-image: radial-gradient(#c9d6e3 1px, transparent 1px); background-size: 20px 20px;">
-  <div class="row justify-content-center">
-    <div class="col-md-5">
-      <div class="text-center mb-4">
-        <h4 class="fw-bold">Welcome back</h4>
-        <p class="text-muted">Log in to your account!</p>
-      </div>
-      <div class="card shadow-sm rounded-3 p-4">
-        <div class="card-body">
-          {% if template_data.error %}
-            <div class="alert alert-danger py-2">{{ template_data.error }}</div>
-          {% endif %}
-          <form method="POST">
-            {% csrf_token %}
-            <div class="mb-3">
-              <label for="username" class="form-label fw-semibold">Username</label>
-              <input id="username" type="text" name="username" required
-                     autocomplete="username" class="form-control">
-            </div>
-            <div class="mb-4">
-              <label for="password" class="form-label fw-semibold">Password</label>
-              <input id="password" type="password" name="password" required
-                     autocomplete="current-password" class="form-control">
-            </div>
-            <div class="d-grid">
-              <button type="submit" class="btn btn-primary">Login</button>
-            </div>
-          </form>
-          <p class="text-center text-muted mt-3 mb-0 small">
-            No account? <a href="{% url 'accounts.signup' %}">Sign Up</a>
-          </p>
+<div class="d-flex" style="min-height: calc(100vh - 60px);">
+  
+  <div class="d-none d-md-flex col-md-6 p-3" style="background-color: #f0f4f8;">
+    <div class="w-100 rounded-4 d-flex flex-column justify-content-center align-items-center text-white p-5"
+        style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+      <h2 class="fw-bold mb-3">Find Your Next Opportunity</h2>
+      <p class="text-white-50 text-center">Connect with top employers and land the job you deserve.</p>
+      <div class="row g-2 mt-3 w-100">
+        <div class="col-6">
+          <div class="rounded-3 p-4 text-white" style="background: rgba(255,255,255,0.15);">
+            <h3 class="fw-bold">500+</h3>
+            <p class="mb-0 small text-white-50">Jobs Available</p>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="rounded-3 p-4 text-white" style="background: rgba(255,255,255,0.1);">
+            <h3 class="fw-bold">83%</h3>
+            <p class="mb-0 small text-white-50">Interview Rate</p>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="rounded-3 p-4 text-white" style="background: rgba(255,255,255,0.1);">
+            <h3 class="fw-bold">AI</h3>
+            <p class="mb-0 small text-white-50">Powered Matching</p>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="rounded-3 p-4 text-white" style="background: rgba(255,255,255,0.15);">
+            <h3 class="fw-bold">100%</h3>
+            <p class="mb-0 small text-white-50">Direct Recruiters</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <div class="col-12 col-md-6 d-flex align-items-center justify-content-center p-5"
+       style="background-color: #f0f4f8;">
+    <div style="width: 100%; max-width: 380px;" class="text-center">
+      <h4 class="fw-bold mb-1">Sign in to <span style="color: #0f3460;">Jobs Finder</span></h4>
+      <p class="text-muted small mb-4">Welcome back! Please enter your login details below.</p>
+
+      {% if template_data.error %}
+        <div class="alert alert-danger py-2">{{ template_data.error }}</div>
+      {% endif %}
+
+      <form method="POST" class="text-start">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="username" class="form-label fw-semibold small">Username</label>
+          <input id="username" type="text" name="username" required
+                 autocomplete="username" class="form-control">
+        </div>
+        <div class="mb-4">
+          <label for="password" class="form-label fw-semibold small">Password</label>
+          <input id="password" type="password" name="password" required
+                 autocomplete="current-password" class="form-control">
+        </div>
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn text-white fw-semibold"
+                  style="background: linear-gradient(135deg, #1a1a2e, #0f3460);">Login</button>
+        </div>
+      </form>
+      <p class="text-center text-muted small mb-0">
+        Don't have an account? <a href="{% url 'accounts.signup' %}">Sign Up</a>
+      </p>
+    </div>
+  </div>
 </div>
+
 {% endblock content %}

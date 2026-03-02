@@ -1,67 +1,75 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="min-vh-100 py-5" style="background-color: #f0f4f8; background-image: radial-gradient(#c9d6e3 1px, transparent 1px); background-size: 20px 20px;">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-md-5">
-        <div class="text-center mb-4">
-          <h4 class="fw-bold">Create an Account</h4>
-          <p class="text-muted">Join Jobs Finder today</p>
-        </div>
-        <div class="card shadow-sm rounded-3 p-4">
-          <div class="card-body">
-            <form method="POST">
-              {% csrf_token %}
-              <div class="mb-3">
-                <label for="{{ template_data.form.username.id_for_label }}" class="form-label fw-semibold">Username</label>
-                {{ template_data.form.username }}
-                {{ template_data.form.username.errors }}
-              </div>
-              <div class="mb-3">
-                <label for="{{ template_data.form.password1.id_for_label }}" class="form-label fw-semibold">Password</label>
-                {{ template_data.form.password1 }}
-                {{ template_data.form.password1.errors }}
-              </div>
-              <div class="mb-3">
-                <label for="{{ template_data.form.password2.id_for_label }}" class="form-label fw-semibold">Password confirmation</label>
-                {{ template_data.form.password2 }}
-                {{ template_data.form.password2.errors }}
-              </div>
-              <div class="mb-3">
-                <label class="form-label fw-semibold d-block">Account type</label>
-                {% for option in template_data.form.account_type %}
-                  <div class="form-check mb-2">
-                    {{ option.tag }}
-                    <label class="form-check-label" for="{{ option.id_for_label }}">{{ option.choice_label }}</label>
-                  </div>
-                {% endfor %}
-                {{ template_data.form.account_type.errors }}
-              </div>
-              <div class="mb-4">
-                <label for="{{ template_data.form.company_name.id_for_label }}" class="form-label fw-semibold">Company name</label>
-                {{ template_data.form.company_name }}
-                {{ template_data.form.company_name.errors }}
-              </div>
-              {% if template_data.form.non_field_errors %}
-                <div class="mb-3">{{ template_data.form.non_field_errors }}</div>
-              {% endif %}
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary">Sign Up</button>
-              </div>
-            </form>
-            <p class="text-center text-muted mt-3 mb-0 small">
-              Already have an account? <a href="{% url 'accounts.login' %}">Login</a>
-            </p>
-          </div>
-        </div>
+
+<div class="d-flex" style="min-height: calc(100vh - 60px);">
+
+  <div class="d-none d-md-flex col-md-5 p-3" style="background-color: #f0f4f8;">
+    <div class="w-100 rounded-4 d-flex flex-column justify-content-start align-items-center text-white p-5 pt-5"
+        style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+      <div class="mt-5 p-4 text-center">
+        <h1 class="fw-bold mb-3">Welcome!</h1>
+        <p class="text-white-50 fs-4">Please tell us a little bit about yourself.</p>
       </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-7 d-flex align-items-center justify-content-center p-5"
+       style="background-color: #f0f4f8;">
+    <div style="width: 100%; max-width: 480px;" class="text-center">
+      <h4 class="fw-bold mb-1">Create your <span style="color: #0f3460;">Jobs Finder</span> account</h4>
+      <p class="text-muted small mb-4">Fill in your details below to get started.</p>
+
+      <form method="POST" class="text-start">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="{{ template_data.form.username.id_for_label }}" class="form-label fw-semibold small">Username</label>
+          {{ template_data.form.username }}
+          {{ template_data.form.username.errors }}
+        </div>
+        <div class="mb-3">
+          <label for="{{ template_data.form.password1.id_for_label }}" class="form-label fw-semibold small">Password</label>
+          {{ template_data.form.password1 }}
+          {{ template_data.form.password1.errors }}
+        </div>
+        <div class="mb-3">
+          <label for="{{ template_data.form.password2.id_for_label }}" class="form-label fw-semibold small">Password confirmation</label>
+          {{ template_data.form.password2 }}
+          {{ template_data.form.password2.errors }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold small d-block">Account type</label>
+          {% for option in template_data.form.account_type %}
+            <div class="form-check form-check-inline">
+              {{ option.tag }}
+              <label class="form-check-label" for="{{ option.id_for_label }}">{{ option.choice_label }}</label>
+            </div>
+          {% endfor %}
+          {{ template_data.form.account_type.errors }}
+        </div>
+        <div class="mb-4" id="company-field">
+          <label for="{{ template_data.form.company_name.id_for_label }}" class="form-label fw-semibold small">Company name</label>
+          {{ template_data.form.company_name }}
+          <small class="text-muted">Optional (used for recruiter accounts).</small>
+          {{ template_data.form.company_name.errors }}
+        </div>
+        {% if template_data.form.non_field_errors %}
+          <div class="mb-3">{{ template_data.form.non_field_errors }}</div>
+        {% endif %}
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn text-white fw-semibold"
+                  style="background: linear-gradient(135deg, #1a1a2e, #0f3460);">Sign Up</button>
+        </div>
+      </form>
+      <p class="text-muted small mb-0">
+        Already have an account? <a href="{% url 'accounts.login' %}">Login</a>
+      </p>
     </div>
   </div>
 </div>
 
 <script>
   const accountTypeInputs = document.querySelectorAll('input[name="account_type"]');
-  const companyField = document.getElementById('{{ template_data.form.company_name.id_for_label }}').closest('.mb-4');
+  const companyField = document.getElementById('{{ template_data.form.company_name.id_for_label }}').closest('#company-field');
 
   function toggleCompanyField() {
     const selected = document.querySelector('input[name="account_type"]:checked');

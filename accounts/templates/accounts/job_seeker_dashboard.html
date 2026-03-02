@@ -1,46 +1,43 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4">
-  <h3 class="mb-1">Job Seeker Dashboard</h3>
-  <p class="text-muted">Track your applications and stay up to date on each stage.</p>
-  <hr />
 
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="fw-bold mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}</h3>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-muted small">
+          {% if template_data.profile.visibility == 'hidden' %}
+            <i class="fas fa-eye-slash me-1"></i>Hidden from recruiters
+          {% else %}
+            <i class="fas fa-eye me-1"></i>Visible to recruiters
+          {% endif %}
+        </span>
+        <a href="{% url 'profiles.toggle_visibility' %}" class="btn btn-sm {% if template_data.profile.visibility == 'hidden' %}btn-outline-secondary{% else %}text-white{% endif %}"{% if template_data.profile.visibility != 'hidden' %}style="background: linear-gradient(135deg, #1a1a2e, #0f3460);"{% endif %}>
+          {% if template_data.profile.visibility == 'hidden' %}Show{% else %}Hide{% endif %}
+        </a>
+      </div>
+    </div>
+    <a href="{% url 'profiles.me' %}" class="btn btn-outline-secondary btn-sm">View Profile</a>
+  </div>
   <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="card-title">My Profile</h5>
-            <a href="{% url 'profiles.toggle_visibility' %}" title="{% if template_data.profile.visibility == 'hidden' %}Hidden from recruiters{% else %}Visible to recruiters{% endif %}">
-              {% if template_data.profile.visibility == 'hidden' %}
-                <i class="fas fa-eye-slash text-muted"></i>
-              {% else %}
-                <i class="fas fa-eye text-success"></i>
-              {% endif %}
-            </a>
-          </div>
-          <p class="card-text">Keep your profile updated so recruiters can evaluate you quickly.</p>
-          <a class="btn btn-primary btn-sm" href="{% url 'profiles.me' %}">Open Profile</a>
-        </div>
+    <div class="col-4">
+      <div class="rounded-3 text-center py-3 bg-light">
+        <h4 class="fw-bold mb-0">{{ template_data.total_applications }}</h4>
+        <small class="text-muted">Total Applied</small>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card h-100">
-        <div class="card-body">
-          <h5 class="card-title">Browse Jobs</h5>
-          <p class="card-text">Explore currently posted jobs and apply to relevant roles.</p>
-          <a class="btn btn-outline-primary btn-sm" href="{% url 'jobs.list' %}">Browse Jobs</a>
-        </div>
+    <div class="col-4">
+      <div class="rounded-3 text-center py-3 bg-light">
+        <h4 class="fw-bold mb-0">{{ template_data.pending_applications }}</h4>
+        <small class="text-muted">Under Review</small>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card h-100">
-        <div class="card-body">
-          <h5 class="card-title">My Applications</h5>
-          <p class="card-text">View all your applications and track stage changes.</p>
-          <a class="btn btn-outline-primary btn-sm" href="{% url 'applications:list' %}">View Applications</a>
-        </div>
+    <div class="col-4">
+      <div class="rounded-3 text-center py-3 bg-light">
+        <h4 class="fw-bold mb-0">{{ template_data.interview_applications }}</h4>
+        <small class="text-muted">Interviews</small>
       </div>
     </div>
   </div>
@@ -131,7 +128,10 @@
     <div class="col-md-6">
       <div class="card h-100">
         <div class="card-body">
-          <h5 class="mb-3">Recent Application Updates</h5>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Recent Application Updates</h5>
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'applications:list' %}">View All</a>
+          </div>
           {% if template_data.recent_applications %}
             <ul class="list-group list-group-flush">
               {% for app in template_data.recent_applications %}
