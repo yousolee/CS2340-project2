@@ -26,6 +26,7 @@ urlpatterns = [
     path('profiles/', include('profiles.urls')),
     path('applications/', include('applications.urls')),
     path('accounts/', include('accounts.urls')),
+    path('messages/', include('messaging.urls')),
 ]
 
 if settings.DEBUG:
