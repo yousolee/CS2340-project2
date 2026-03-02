@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3><i class="fas fa-envelope me-2"></i>Messages</h3>
+  </div>
+
+  {% if conversations_data %}
+    <div class="list-group">
+      {% for item in conversations_data %}
+        <a href="{% url 'messaging.conversation' item.conversation.id %}"
+           class="list-group-item list-group-item-action py-3 {% if item.unread %}fw-bold{% endif %}">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <span class="fs-6">
+                {% if item.unread %}
+                  <span class="badge bg-primary me-2">{{ item.unread }}</span>
+                {% endif %}
+                {{ item.other.get_full_name|default:item.other.username }}
+                <small class="text-muted ms-1">@{{ item.other.username }}</small>
+              </span>
+              {% if item.last_message %}
+                <div class="text-muted small mt-1">
+                  {% if item.last_message.sender == request.user %}You: {% endif %}
+                  {{ item.last_message.body|truncatewords:12 }}
+                </div>
+              {% else %}
+                <div class="text-muted small mt-1 fst-italic">No messages yet</div>
+              {% endif %}
+            </div>
+            <small class="text-muted text-nowrap ms-3">
+              {% if item.last_message %}
+                {{ item.last_message.sent_at|naturaltime }}
+              {% else %}
+                {{ item.conversation.created_at|naturaltime }}
+              {% endif %}
+            </small>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <i class="fas fa-inbox me-2"></i>
+      No conversations yet.
+      {% if is_recruiter %}
+        Find candidates via <a href="{% url 'accounts.candidate_search' %}">Candidate Search</a> and send them a message.
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}
