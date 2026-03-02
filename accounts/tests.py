@@ -220,6 +220,10 @@ class CandidateSearchRecommendationTests(TestCase):
             response,
             reverse("profiles.public", args=[self.seeker_user.username]),
         )
+        self.assertContains(
+            response,
+            reverse("messaging.start", args=[self.seeker_user.username]),
+        )
 
         template_data = response.context["template_data"]
         self.assertEqual(template_data["selected_recommended_job"].id, self.job.id)
