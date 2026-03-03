@@ -23,6 +23,12 @@
           <a href="{% url 'accounts.candidate_search' %}" class="btn btn-outline-primary btn-sm">
             <i class="fas fa-search me-2"></i>Search Candidates
           </a>
+          <a href="{% url 'accounts.saved_searches' %}" class="btn btn-outline-secondary btn-sm ms-2">
+            <i class="fas fa-bookmark me-2"></i>Saved Searches
+          </a>
+          <a href="{% url 'accounts.applicant_map' %}" class="btn btn-outline-info btn-sm ms-2">
+            <i class="fas fa-map-marked-alt me-2"></i>Applicant Map
+          </a>
         </div>
       </div>
     </div>
@@ -42,6 +48,10 @@
                     <div>
                       {% if item.application_id %}
                         <a href="{% url 'applications:detail' item.application_id %}" class="text-decoration-none">
+                          {{ item.text }}
+                        </a>
+                      {% elif item.search_url %}
+                        <a href="{{ item.search_url }}" class="text-decoration-none">
                           {{ item.text }}
                         </a>
                       {% else %}

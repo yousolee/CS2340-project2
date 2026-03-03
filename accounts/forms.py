@@ -71,8 +71,22 @@ class CandidateSearchForm(forms.Form):
 
         for fieldname in ['skills', 'location', 'company', 'job_title']:
             self.fields[fieldname].widget.attrs.update({'class': 'form-control'})
-        
+
         self.fields['skills'].widget.attrs.update({'placeholder': 'Skills (e.g. Python, Django)'})
         self.fields['location'].widget.attrs.update({'placeholder': 'Location'})
         self.fields['company'].widget.attrs.update({'placeholder': 'Company'})
         self.fields['job_title'].widget.attrs.update({'placeholder': 'Job Title'})
+
+
+class SavedSearchForm(forms.Form):
+    name = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g. Django developers in Atlanta',
+        }),
+    )
+    skills = forms.CharField(required=False, widget=forms.HiddenInput())
+    location = forms.CharField(required=False, widget=forms.HiddenInput())
+    company = forms.CharField(required=False, widget=forms.HiddenInput())
+    job_title = forms.CharField(required=False, widget=forms.HiddenInput())

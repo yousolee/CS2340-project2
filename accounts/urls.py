@@ -7,6 +7,10 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='accounts.dashboard'),
     path('logout/', views.logout, name='accounts.logout'),
     path('candidate-search/', views.candidate_search, name='accounts.candidate_search'),
+    path('saved-searches/', views.saved_searches, name='accounts.saved_searches'),
+    path('save-search/', views.save_search, name='accounts.save_search'),
+    path('saved-searches/delete/<int:search_id>/', views.delete_saved_search, name='accounts.delete_saved_search'),
+    path('applicant-map/', views.applicant_map, name='accounts.applicant_map'),
 
     # Admin Dashboard URLs
     path('admin-dashboard/', views.admin_dashboard, name='accounts.admin_dashboard'),

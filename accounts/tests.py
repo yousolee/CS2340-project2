@@ -1,10 +1,14 @@
+from io import StringIO
+
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from django.contrib.auth.models import User
 
 from applications.models import Application, Notification
 from jobs.models import Job
-from .models import Recruiter
+from .models import Recruiter, SavedSearch
 from profiles.models import Experience, Profile
 
 
@@ -239,3 +243,269 @@ class CandidateSearchRecommendationTests(TestCase):
         template_data = response.context["template_data"]
         self.assertIsNone(template_data["selected_recommended_job"])
         self.assertEqual(template_data["candidate_recommendations"], [])
+
+
+class SavedSearchTests(TestCase):
+    def setUp(self):
+        self.recruiter_user = User.objects.create_user(
+            username='search_recruiter', password='ComplexPass123!'
+        )
+        self.recruiter = Recruiter.objects.create(
+            user=self.recruiter_user, company_name='Acme'
+        )
+        self.seeker_user = User.objects.create_user(
+            username='search_seeker', password='ComplexPass123!'
+        )
+        self.seeker_profile = self.seeker_user.profile
+        self.seeker_profile.skills = 'Python, Django'
+        self.seeker_profile.location = 'Atlanta, GA'
+        self.seeker_profile.save()
+
+        self.client.login(username='search_recruiter', password='ComplexPass123!')
+
+    def test_save_search_creates_saved_search(self):
+        response = self.client.post(reverse('accounts.save_search'), {
+            'name': 'Django Devs',
+            'skills': 'Python, Django',
+            'location': 'Atlanta',
+            'company': '',
+            'job_title': '',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(SavedSearch.objects.filter(
+            recruiter=self.recruiter, name='Django Devs'
+        ).exists())
+
+    def test_save_search_requires_name(self):
+        response = self.client.post(reverse('accounts.save_search'), {
+            'name': '',
+            'skills': 'Python',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(SavedSearch.objects.count(), 0)
+
+    def test_saved_searches_list_view(self):
+        SavedSearch.objects.create(
+            recruiter=self.recruiter, name='Test Search',
+            skills='Python', location='Atlanta',
+        )
+        response = self.client.get(reverse('accounts.saved_searches'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Search')
+
+    def test_delete_saved_search(self):
+        search = SavedSearch.objects.create(
+            recruiter=self.recruiter, name='To Delete', skills='Java',
+        )
+        response = self.client.post(
+            reverse('accounts.delete_saved_search', kwargs={'search_id': search.id})
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(SavedSearch.objects.filter(pk=search.id).exists())
+
+    def test_delete_other_recruiter_search_fails(self):
+        other_user = User.objects.create_user(
+            username='other_recruiter2', password='ComplexPass123!'
+        )
+        other_recruiter = Recruiter.objects.create(
+            user=other_user, company_name='OtherCo'
+        )
+        search = SavedSearch.objects.create(
+            recruiter=other_recruiter, name='Not Mine', skills='Go',
+        )
+        response = self.client.post(
+            reverse('accounts.delete_saved_search', kwargs={'search_id': search.id})
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(SavedSearch.objects.filter(pk=search.id).exists())
+
+    def test_candidate_search_shows_save_button_with_filters(self):
+        response = self.client.get(
+            reverse('accounts.candidate_search'),
+            {'skills': 'Python'}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Save This Search')
+
+    def test_candidate_search_hides_save_button_without_filters(self):
+        response = self.client.get(reverse('accounts.candidate_search'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Save This Search')
+
+    def test_saved_search_get_search_url(self):
+        search = SavedSearch.objects.create(
+            recruiter=self.recruiter, name='URL Test',
+            skills='Python', location='Atlanta',
+        )
+        url = search.get_search_url()
+        self.assertIn('skills=Python', url)
+        self.assertIn('location=Atlanta', url)
+        self.assertIn('/accounts/candidate-search/', url)
+
+    def test_save_search_redirects_with_filters(self):
+        response = self.client.post(reverse('accounts.save_search'), {
+            'name': 'Redirect Test',
+            'skills': 'React',
+            'location': 'NYC',
+            'company': '',
+            'job_title': '',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('skills=React', response.url)
+        self.assertIn('location=NYC', response.url)
+
+
+class CheckSavedSearchesCommandTests(TestCase):
+    def setUp(self):
+        self.recruiter_user = User.objects.create_user(
+            username='cmd_recruiter', password='ComplexPass123!'
+        )
+        self.recruiter = Recruiter.objects.create(
+            user=self.recruiter_user, company_name='Acme'
+        )
+
+    def test_command_creates_notification_for_new_match(self):
+        search = SavedSearch.objects.create(
+            recruiter=self.recruiter,
+            name='Python Search',
+            skills='Python',
+        )
+        SavedSearch.objects.filter(pk=search.pk).update(
+            last_checked_at=timezone.now() - timezone.timedelta(days=1)
+        )
+        seeker = User.objects.create_user(username='new_seeker', password='ComplexPass123!')
+        profile = seeker.profile
+        profile.skills = 'Python, Flask'
+        profile.save()
+
+        out = StringIO()
+        call_command('check_saved_searches', stdout=out)
+
+        self.assertTrue(
+            Notification.objects.filter(
+                recipient=self.recruiter_user,
+                verb='saved_search_new_matches',
+            ).exists()
+        )
+
+    def test_command_no_notification_when_no_new_matches(self):
+        SavedSearch.objects.create(
+            recruiter=self.recruiter,
+            name='Rare Skill Search',
+            skills='COBOL',
+        )
+        out = StringIO()
+        call_command('check_saved_searches', stdout=out)
+
+        self.assertFalse(
+            Notification.objects.filter(
+                recipient=self.recruiter_user,
+                verb='saved_search_new_matches',
+            ).exists()
+        )
+
+    def test_command_updates_last_checked_at(self):
+        search = SavedSearch.objects.create(
+            recruiter=self.recruiter,
+            name='Timestamp Test',
+            skills='Java',
+        )
+        old_checked = timezone.now() - timezone.timedelta(hours=1)
+        SavedSearch.objects.filter(pk=search.pk).update(last_checked_at=old_checked)
+
+        out = StringIO()
+        call_command('check_saved_searches', stdout=out)
+
+        search.refresh_from_db()
+        self.assertGreater(search.last_checked_at, old_checked)
+
+
+class ApplicantMapTests(TestCase):
+    def setUp(self):
+        self.recruiter_user = User.objects.create_user(
+            username='map_recruiter', password='ComplexPass123!'
+        )
+        self.recruiter = Recruiter.objects.create(
+            user=self.recruiter_user, company_name='Acme'
+        )
+        self.seeker_user = User.objects.create_user(
+            username='map_seeker', password='ComplexPass123!'
+        )
+        self.seeker_profile = self.seeker_user.profile
+        self.seeker_profile.location = 'Atlanta, GA'
+        self.seeker_profile.save()
+
+        self.seeker_user2 = User.objects.create_user(
+            username='map_seeker2', password='ComplexPass123!'
+        )
+        self.seeker_profile2 = self.seeker_user2.profile
+        self.seeker_profile2.location = 'Remote'
+        self.seeker_profile2.save()
+
+        self.seeker_user3 = User.objects.create_user(
+            username='map_seeker3', password='ComplexPass123!'
+        )
+        self.seeker_profile3 = self.seeker_user3.profile
+        self.seeker_profile3.location = ''
+        self.seeker_profile3.save()
+
+        self.job = Job.objects.create(
+            title='Backend Engineer', company='Acme',
+            location='Atlanta, GA', description='Build APIs',
+            skills='Python', mode='hybrid', posted_by=self.recruiter,
+        )
+        self.job2 = Job.objects.create(
+            title='Frontend Dev', company='Acme',
+            location='NYC', description='Build UIs',
+            skills='React', mode='remote', posted_by=self.recruiter,
+        )
+        Application.objects.create(
+            job=self.job, applicant=self.seeker_user,
+            status=Application.Status.APPLIED,
+        )
+        Application.objects.create(
+            job=self.job, applicant=self.seeker_user2,
+            status=Application.Status.APPLIED,
+        )
+        Application.objects.create(
+            job=self.job, applicant=self.seeker_user3,
+            status=Application.Status.APPLIED,
+        )
+        Application.objects.create(
+            job=self.job2, applicant=self.seeker_user,
+            status=Application.Status.APPLIED,
+        )
+
+        self.client.login(username='map_recruiter', password='ComplexPass123!')
+
+    def test_applicant_map_loads_for_recruiter(self):
+        response = self.client.get(reverse('accounts.applicant_map'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'applicant-map')
+        self.assertContains(response, 'leaflet')
+
+    def test_applicant_map_with_job_filter(self):
+        response = self.client.get(
+            reverse('accounts.applicant_map'),
+            {'job_id': self.job2.id},
+        )
+        self.assertEqual(response.status_code, 200)
+        template_data = response.context['template_data']
+        self.assertEqual(template_data['selected_job'].id, self.job2.id)
+
+    def test_applicant_map_excludes_remote_and_blank(self):
+        response = self.client.get(reverse('accounts.applicant_map'))
+        template_data = response.context['template_data']
+        locations = [d['location'] for d in template_data['location_data']]
+        self.assertIn('Atlanta, GA', locations)
+        self.assertNotIn('Remote', locations)
+        self.assertNotIn('', locations)
+
+    def test_applicant_map_requires_recruiter_role(self):
+        self.client.logout()
+        seeker_only = User.objects.create_user(
+            username='plain_seeker', password='ComplexPass123!'
+        )
+        self.client.login(username='plain_seeker', password='ComplexPass123!')
+        response = self.client.get(reverse('accounts.applicant_map'))
+        self.assertNotEqual(response.status_code, 200)

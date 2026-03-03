@@ -21,6 +21,17 @@
       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
         <i class="fas fa-filter me-2"></i>Filter Candidates
       </button>
+      {% if template_data.has_filter_criteria %}
+        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#saveSearchModal">
+          <i class="fas fa-bookmark me-2"></i>Save This Search
+        </button>
+      {% endif %}
+      <a href="{% url 'accounts.saved_searches' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-list me-2"></i>Saved Searches
+        {% if template_data.saved_search_count %}
+          <span class="badge bg-primary">{{ template_data.saved_search_count }}</span>
+        {% endif %}
+      </a>
     </div>
   </div>
 
@@ -243,4 +254,46 @@
     </div>
   </div>
 </div>
+{% if template_data.has_filter_criteria %}
+<!-- Save Search Modal -->
+<div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saveSearchModalLabel">Save This Search</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{% url 'accounts.save_search' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="id_name" class="form-label">Search Name</label>
+            {{ template_data.saved_search_form.name }}
+            <small class="form-text text-muted">Give this search a memorable name</small>
+          </div>
+          {{ template_data.saved_search_form.skills }}
+          {{ template_data.saved_search_form.location }}
+          {{ template_data.saved_search_form.company }}
+          {{ template_data.saved_search_form.job_title }}
+          <div class="alert alert-light mb-0">
+            <small>
+              <strong>Criteria:</strong>
+              {% if template_data.form.skills.value %}Skills: {{ template_data.form.skills.value }}{% endif %}
+              {% if template_data.form.location.value %}{% if template_data.form.skills.value %} | {% endif %}Location: {{ template_data.form.location.value }}{% endif %}
+              {% if template_data.form.company.value %}{% if template_data.form.skills.value or template_data.form.location.value %} | {% endif %}Company: {{ template_data.form.company.value }}{% endif %}
+              {% if template_data.form.job_title.value %}{% if template_data.form.skills.value or template_data.form.location.value or template_data.form.company.value %} | {% endif %}Job Title: {{ template_data.form.job_title.value }}{% endif %}
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-save me-1"></i>Save Search
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock content %}

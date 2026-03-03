@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+{% endblock extra_head %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-1">Applicant Map</h3>
+      <p class="text-muted mb-0">See where your applicants are located.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'accounts.dashboard' %}">Back to Dashboard</a>
+  </div>
+  <hr />
+
+  <!-- Job filter -->
+  <form method="get" class="row g-2 mb-4 align-items-end">
+    <div class="col-md-4">
+      <label for="job_id" class="form-label">Filter by Job</label>
+      <select name="job_id" id="job_id" class="form-select">
+        <option value="">All Jobs</option>
+        {% for job in template_data.recruiter_jobs %}
+          <option value="{{ job.id }}" {% if template_data.selected_job_id == job.id|stringformat:"d" %}selected{% endif %}>
+            {{ job.title }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary">Filter</button>
+    </div>
+  </form>
+
+  {% if template_data.selected_job %}
+    <div class="alert alert-info py-2">
+      Showing applicants for <strong>{{ template_data.selected_job.title }}</strong>
+    </div>
+  {% endif %}
+
+  <!-- Map -->
+  <div class="card mb-4">
+    <div class="card-body p-0">
+      <div id="applicant-map" style="height: 500px; width: 100%;"></div>
+    </div>
+    <div class="card-footer text-muted small">
+      <span id="geocode-status">Loading map...</span>
+      &middot; {{ template_data.total_applicants }} applicant{{ template_data.total_applicants|pluralize }} across {{ template_data.location_data|length }} location{{ template_data.location_data|length|pluralize }}
+    </div>
+  </div>
+
+  <!-- Location summary table -->
+  {% if template_data.location_data %}
+    <h5 class="mb-3">Location Breakdown</h5>
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Location</th>
+            <th>Applicants</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in template_data.location_data %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ entry.location }}</td>
+              <td>{{ entry.count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-light">No applicant location data available.</div>
+  {% endif %}
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+(function () {
+  const locationData = {{ template_data.location_data_json|safe }};
+  const statusEl = document.getElementById('geocode-status');
+
+  // Initialize map centered on US
+  const map = L.map('applicant-map').setView([39.8, -98.5], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 18,
+  }).addTo(map);
+
+  const markers = L.markerClusterGroup();
+
+  if (locationData.length === 0) {
+    statusEl.textContent = 'No location data to display.';
+    return;
+  }
+
+  // localStorage cache for geocoded coordinates
+  const CACHE_KEY = 'applicant_map_geocode_cache';
+  function getCache() {
+    try {
+      return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+  function setCache(cache) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    } catch (e) { /* ignore quota errors */ }
+  }
+
+  // Geocode with Nominatim (rate-limited to 1 req/sec)
+  async function geocode(query) {
+    const cache = getCache();
+    const key = query.trim().toLowerCase();
+    if (cache[key]) return cache[key];
+
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'JobsFinder-ApplicantMap/1.0' },
+    });
+    const data = await resp.json();
+    if (data && data.length > 0) {
+      const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      cache[key] = result;
+      setCache(cache);
+      return result;
+    }
+    return null;
+  }
+
+  // Process locations sequentially with 1-second delay
+  async function processLocations() {
+    let completed = 0;
+    const total = locationData.length;
+    const bounds = [];
+
+    for (const entry of locationData) {
+      statusEl.textContent = `Geocoding ${completed + 1} of ${total}...`;
+      try {
+        const coords = await geocode(entry.location);
+        if (coords) {
+          const marker = L.marker([coords.lat, coords.lng]);
+          marker.bindPopup(
+            '<strong>' + entry.location.replace(/</g, '&lt;') + '</strong><br>' +
+            entry.count + ' applicant' + (entry.count !== 1 ? 's' : '')
+          );
+          markers.addLayer(marker);
+          bounds.push([coords.lat, coords.lng]);
+        }
+      } catch (e) {
+        console.warn('Geocoding failed for:', entry.location, e);
+      }
+      completed++;
+      // Rate limit: 1 request per second
+      if (completed < total) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    map.addLayer(markers);
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [30, 30] });
+    }
+    statusEl.textContent = `Geocoded ${bounds.length} of ${total} location(s).`;
+  }
+
+  processLocations();
+})();
+</script>
+{% endblock extra_js %}

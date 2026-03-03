@@ -1,4 +1,5 @@
 import csv
+import json
 import logging
 
 from django.conf import settings
@@ -6,18 +7,21 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Count
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import urlencode
 
 from applications.models import Application, Notification
 from jobs.models import Job
 from jobs.recommendations.service import recommend_jobs_for_profile, recommend_profiles_for_job
 from profiles.models import Profile
 
-from .models import Recruiter
-from .forms import CandidateSearchForm, CustomErrorList, CustomUserCreationForm
+from .models import Recruiter, SavedSearch
+from .forms import CandidateSearchForm, CustomErrorList, CustomUserCreationForm, SavedSearchForm
 from .utils import (
+    filter_candidate_profiles,
     get_user_role,
     is_administrator,
     is_recruiter as is_recruiter_user,
@@ -46,6 +50,10 @@ def _notification_text(notification):
         new_status = (notification.data or {}).get("new_status", "")
         status_label = dict(Application.Status.choices).get(new_status, "Updated")
         return f"Application status changed to {status_label}."
+    if notification.verb == "saved_search_new_matches":
+        search_name = (notification.data or {}).get("search_name", "A saved search")
+        match_count = (notification.data or {}).get("match_count", 0)
+        return f'{match_count} new candidate(s) match your saved search "{search_name}".'
     return notification.verb.replace("_", " ").capitalize()
 
 
@@ -133,6 +141,11 @@ def dashboard(request):
                     'text': _notification_text(notification),
                     'created_at': notification.created_at,
                     'application_id': notification.application_id,
+                    'search_url': (
+                        (notification.data or {}).get('search_url', '')
+                        if notification.verb == 'saved_search_new_matches'
+                        else ''
+                    ),
                 }
                 for notification in unread_notifications
             ],
@@ -236,32 +249,18 @@ def candidate_search(request):
                     "Could not generate candidate recommendations right now. Please try again.",
                 )
     elif request.GET and form.is_valid():
-        profiles = (
-            Profile.objects.filter(
-                role=Profile.Role.JOB_SEEKER,
-                visibility=Profile.Visibility.OPEN,
-            )
-            .select_related("user")
-            .prefetch_related("experiences", "educations")
+        profiles = filter_candidate_profiles(
+            skills=form.cleaned_data.get('skills', ''),
+            location=form.cleaned_data.get('location', ''),
+            company=form.cleaned_data.get('company', ''),
+            job_title=form.cleaned_data.get('job_title', ''),
         )
-
-        if form.cleaned_data.get('skills'):
-            skills_list = [skill.strip() for skill in form.cleaned_data['skills'].split(',')]
-            skill_query = Q()
-            for skill in skills_list:
-                skill_query |= Q(skills__icontains=skill)
-            profiles = profiles.filter(skill_query)
-
-        if form.cleaned_data.get('location'):
-            profiles = profiles.filter(location__icontains=form.cleaned_data['location'])
-
-        if form.cleaned_data.get('company'):
-            profiles = profiles.filter(experiences__company__icontains=form.cleaned_data['company']).distinct()
-
-        if form.cleaned_data.get('job_title'):
-            profiles = profiles.filter(experiences__title__icontains=form.cleaned_data['job_title']).distinct()
-
         profile_count = profiles.count()
+
+    has_filter_criteria = bool(
+        request.GET.get('skills') or request.GET.get('location')
+        or request.GET.get('company') or request.GET.get('job_title')
+    )
 
     template_data = {
         'title': 'Candidate Search',
@@ -272,8 +271,124 @@ def candidate_search(request):
         'recruiter_jobs': recruiter_jobs,
         'selected_recommended_job': selected_recommended_job,
         'selected_recommended_job_id': selected_recommended_job_id,
+        'has_filter_criteria': has_filter_criteria,
+        'saved_search_form': SavedSearchForm(initial={
+            'skills': request.GET.get('skills', ''),
+            'location': request.GET.get('location', ''),
+            'company': request.GET.get('company', ''),
+            'job_title': request.GET.get('job_title', ''),
+        }),
+        'saved_search_count': SavedSearch.objects.filter(recruiter=recruiter).count(),
     }
     return render(request, 'accounts/candidate_search.html', {'template_data': template_data})
+
+
+@login_required
+@user_passes_test(is_recruiter_user)
+def save_search(request):
+    if request.method != 'POST':
+        return redirect('accounts.candidate_search')
+
+    form = SavedSearchForm(request.POST)
+    if form.is_valid():
+        recruiter = request.user.recruiter_profile
+        SavedSearch.objects.create(
+            recruiter=recruiter,
+            name=form.cleaned_data['name'],
+            skills=form.cleaned_data.get('skills', ''),
+            location=form.cleaned_data.get('location', ''),
+            company=form.cleaned_data.get('company', ''),
+            job_title=form.cleaned_data.get('job_title', ''),
+        )
+        messages.success(request, f'Search "{form.cleaned_data["name"]}" saved successfully.')
+    else:
+        messages.error(request, 'Please provide a name for your saved search.')
+
+    params = {}
+    for key in ['skills', 'location', 'company', 'job_title']:
+        val = request.POST.get(key, '').strip()
+        if val:
+            params[key] = val
+    redirect_url = reverse('accounts.candidate_search')
+    if params:
+        redirect_url += '?' + urlencode(params)
+    return redirect(redirect_url)
+
+
+@login_required
+@user_passes_test(is_recruiter_user)
+def saved_searches(request):
+    recruiter = request.user.recruiter_profile
+    searches = SavedSearch.objects.filter(recruiter=recruiter)
+
+    template_data = {
+        'title': 'Saved Searches',
+        'saved_searches': searches,
+    }
+    return render(request, 'accounts/saved_searches.html', {'template_data': template_data})
+
+
+@login_required
+@user_passes_test(is_recruiter_user)
+def delete_saved_search(request, search_id):
+    if request.method != 'POST':
+        return redirect('accounts.saved_searches')
+
+    recruiter = request.user.recruiter_profile
+    search = SavedSearch.objects.filter(pk=search_id, recruiter=recruiter).first()
+    if search:
+        search_name = search.name
+        search.delete()
+        messages.success(request, f'Saved search "{search_name}" deleted.')
+    else:
+        messages.error(request, 'Saved search not found.')
+
+    return redirect('accounts.saved_searches')
+
+
+@login_required
+@user_passes_test(is_recruiter_user)
+def applicant_map(request):
+    recruiter = request.user.recruiter_profile
+    recruiter_jobs = Job.objects.filter(posted_by=recruiter).order_by('-posted_date')
+    selected_job_id = (request.GET.get('job_id') or '').strip()
+    selected_job = None
+
+    apps = Application.objects.filter(job__posted_by=recruiter)
+
+    if selected_job_id:
+        selected_job = recruiter_jobs.filter(pk=selected_job_id).first()
+        if selected_job:
+            apps = apps.filter(job=selected_job)
+
+    location_counts = (
+        apps
+        .exclude(applicant__profile__location='')
+        .values('applicant__profile__location')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    location_data = []
+    for entry in location_counts:
+        loc = entry['applicant__profile__location']
+        if loc.strip().lower() == 'remote':
+            continue
+        location_data.append({
+            'location': loc,
+            'count': entry['count'],
+        })
+
+    template_data = {
+        'title': 'Applicant Map',
+        'location_data': location_data,
+        'location_data_json': json.dumps(location_data),
+        'total_applicants': sum(d['count'] for d in location_data),
+        'recruiter_jobs': recruiter_jobs,
+        'selected_job': selected_job,
+        'selected_job_id': selected_job_id,
+    }
+    return render(request, 'accounts/applicant_map.html', {'template_data': template_data})
 
 
 # ============= ADMIN DASHBOARD VIEWS =============
