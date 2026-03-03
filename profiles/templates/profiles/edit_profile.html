@@ -1,254 +1,210 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container py-4 profile-page">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">Edit {{ template_data.section_label }}</h3>
-    <a class="btn btn-outline-secondary" href="{% url 'profiles.me' %}">Back to Profile</a>
-  </div>
 
-  <div class="profile-card mb-4">
-    <div class="d-flex flex-wrap gap-2">
-      {% for section_key, section_name in template_data.section_labels.items %}
-        <a
-          class="btn btn-sm {% if template_data.section == section_key %}btn-primary{% else %}btn-outline-primary{% endif %}"
-          href="{% url 'profiles.edit_section' section_key %}">
-          {{ section_name }}
-        </a>
-      {% endfor %}
-    </div>
-  </div>
+<div style="background-color: #f5f6fa; min-height: 100vh;">
+  <div class="container py-4">
+    <div class="row g-4">
 
-  <form method="POST" id="profile-edit-form">
-    {% csrf_token %}
-
-    {% if template_data.form %}
-      {% if template_data.form.non_field_errors %}
-        <div class="alert alert-danger">{{ template_data.form.non_field_errors }}</div>
-      {% endif %}
-      <div class="profile-card">
-        {% for field in template_data.form %}
-          <div class="mb-3">
-            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}
-              <div class="form-text">{{ field.help_text }}</div>
-            {% endif %}
-            {{ field.errors }}
-            <div class="char-counter text-muted small"></div>
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-3 text-center border-bottom">
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold mx-auto mb-2"
+                 style="width: 56px; height: 56px; background: linear-gradient(135deg, #1a1a2e, #0f3460); font-size: 1.3rem;">
+              {{ request.user.username|first|upper }}
+            </div>
+            <h6 class="fw-bold mb-0">{{ request.user.get_full_name|default:request.user.username }}</h6>
+            <small class="text-muted">@{{ request.user.username }}</small>
           </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-
-    {% if template_data.experience_formset %}
-      {% if template_data.experience_formset.non_form_errors %}
-        <div class="alert alert-danger">{{ template_data.experience_formset.non_form_errors }}</div>
-      {% endif %}
-      <div class="profile-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">Experience Entries</h5>
-          <button type="button" class="btn btn-outline-primary btn-sm" id="add-experience">Add Experience</button>
+          <div class="list-group list-group-flush">
+            {% for section_key, section_name in template_data.section_labels.items %}
+              <a href="{% url 'profiles.edit_section' section_key %}"
+                 class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-3 {% if template_data.section == section_key %}active{% endif %}">
+                {% if section_key == 'basic' %}<i class="fas fa-user fa-fw"></i>
+                {% elif section_key == 'about' %}<i class="fas fa-info-circle fa-fw"></i>
+                {% elif section_key == 'skills' %}<i class="fas fa-tools fa-fw"></i>
+                {% elif section_key == 'experience' %}<i class="fas fa-briefcase fa-fw"></i>
+                {% elif section_key == 'education' %}<i class="fas fa-graduation-cap fa-fw"></i>
+                {% elif section_key == 'links' %}<i class="fas fa-link fa-fw"></i>
+                {% endif %}
+                {{ section_name }}
+              </a>
+            {% endfor %}
+          </div>
+          <div class="card-body p-3 border-top">
+            <a href="{% url 'profiles.me' %}" class="btn btn-outline-secondary btn-sm w-100">
+              <i class="fas fa-arrow-left me-1"></i>Back to Profile
+            </a>
+          </div>
         </div>
+      </div>
 
-        {{ template_data.experience_formset.management_form }}
-        <div id="experience-forms">
-          {% for exp_form in template_data.experience_formset %}
-            <div class="entry-card mb-3">
-              {{ exp_form.id }}
-              {% if exp_form.non_field_errors %}
-                <div class="alert alert-danger">{{ exp_form.non_field_errors }}</div>
-              {% endif %}
-              {% if exp_form.errors %}
-                <ul class="text-danger small mb-2">
-                  {% for field_name, errors in exp_form.errors.items %}
-                    {% for error in errors %}
-                      <li>{{ error }}</li>
-                    {% endfor %}
-                  {% endfor %}
-                </ul>
-              {% endif %}
+      <div class="col-md-9">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-4">Edit {{ template_data.section_label }}</h5>
 
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Company</label>
-                  {{ exp_form.company }}
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Title</label>
-                  {{ exp_form.title }}
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Employment Type</label>
-                  {{ exp_form.employment_type }}
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Location</label>
-                  {{ exp_form.location }}
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Work Location Type</label>
-                  {{ exp_form.location_type }}
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Start Date</label>
-                  {{ exp_form.start_date }}
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">End Date</label>
-                  {{ exp_form.end_date }}
-                </div>
-                <div class="col-md-12">
-                  <div class="form-check">
-                    {{ exp_form.is_current }}
-                    <label class="form-check-label" for="{{ exp_form.is_current.id_for_label }}">I currently work here</label>
+            <form method="POST" id="profile-edit-form">
+              {% csrf_token %}
+
+              {% if template_data.form %}
+                {% if template_data.form.non_field_errors %}
+                  <div class="alert alert-danger">{{ template_data.form.non_field_errors }}</div>
+                {% endif %}
+                {% for field in template_data.form %}
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                      <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {{ field.errors }}
+                    <div class="char-counter text-muted small"></div>
                   </div>
+                {% endfor %}
+              {% endif %}
+
+              {% if template_data.experience_formset %}
+                {% if template_data.experience_formset.non_form_errors %}
+                  <div class="alert alert-danger">{{ template_data.experience_formset.non_form_errors }}</div>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold mb-0">Experience Entries</h6>
+                  <button type="button" class="btn btn-outline-primary btn-sm" id="add-experience">Add Experience</button>
                 </div>
-                <div class="col-md-12">
-                  <label class="form-label">Description</label>
-                  {{ exp_form.description }}
-                  <div class="char-counter text-muted small"></div>
+                {{ template_data.experience_formset.management_form }}
+                <div id="experience-forms">
+                  {% for exp_form in template_data.experience_formset %}
+                    <div class="border rounded-3 p-3 mb-3 bg-light">
+                      {{ exp_form.id }}
+                      {% if exp_form.non_field_errors %}
+                        <div class="alert alert-danger">{{ exp_form.non_field_errors }}</div>
+                      {% endif %}
+                      {% if exp_form.errors %}
+                        <ul class="text-danger small mb-2">
+                          {% for field_name, errors in exp_form.errors.items %}
+                            {% for error in errors %}
+                              <li>{{ error }}</li>
+                            {% endfor %}
+                          {% endfor %}
+                        </ul>
+                      {% endif %}
+                      <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label small fw-semibold">Company</label>{{ exp_form.company }}</div>
+                        <div class="col-md-6"><label class="form-label small fw-semibold">Title</label>{{ exp_form.title }}</div>
+                        <div class="col-md-6"><label class="form-label small fw-semibold">Employment Type</label>{{ exp_form.employment_type }}</div>
+                        <div class="col-md-6"><label class="form-label small fw-semibold">Location</label>{{ exp_form.location }}</div>
+                        <div class="col-md-6"><label class="form-label small fw-semibold">Work Location Type</label>{{ exp_form.location_type }}</div>
+                        <div class="col-md-3"><label class="form-label small fw-semibold">Start Date</label>{{ exp_form.start_date }}</div>
+                        <div class="col-md-3"><label class="form-label small fw-semibold">End Date</label>{{ exp_form.end_date }}</div>
+                        <div class="col-md-12">
+                          <div class="form-check">
+                            {{ exp_form.is_current }}
+                            <label class="form-check-label small" for="{{ exp_form.is_current.id_for_label }}">I currently work here</label>
+                          </div>
+                        </div>
+                        <div class="col-md-12"><label class="form-label small fw-semibold">Description</label>{{ exp_form.description }}<div class="char-counter text-muted small"></div></div>
+                        <div class="col-md-12"><label class="form-label small fw-semibold">Activities</label>{{ exp_form.activities }}<div class="char-counter text-muted small"></div></div>
+                      </div>
+                      {% if exp_form.instance.pk %}
+                        <div class="form-check mt-2">
+                          {{ exp_form.DELETE }}
+                          <label class="form-check-label small text-danger" for="{{ exp_form.DELETE.id_for_label }}">Remove this experience</label>
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
                 </div>
-                <div class="col-md-12">
-                  <label class="form-label">Activities</label>
-                  {{ exp_form.activities }}
-                  <div class="char-counter text-muted small"></div>
+              {% endif %}
+
+              {% if template_data.education_formset %}
+                {% if template_data.education_formset.non_form_errors %}
+                  <div class="alert alert-danger">{{ template_data.education_formset.non_form_errors }}</div>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold mb-0">Education Entries</h6>
+                  <button type="button" class="btn btn-outline-primary btn-sm" id="add-education">Add Education</button>
                 </div>
+                {{ template_data.education_formset.management_form }}
+                <div id="education-forms">
+                  {% for edu_form in template_data.education_formset %}
+                    <div class="border rounded-3 p-3 mb-3 bg-light">
+                      {{ edu_form.id }}
+                      {% if edu_form.non_field_errors %}
+                        <div class="alert alert-danger">{{ edu_form.non_field_errors }}</div>
+                      {% endif %}
+                      {% if edu_form.errors %}
+                        <ul class="text-danger small mb-2">
+                          {% for field_name, errors in edu_form.errors.items %}
+                            {% for error in errors %}
+                              <li>{{ error }}</li>
+                            {% endfor %}
+                          {% endfor %}
+                        </ul>
+                      {% endif %}
+                      <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label small fw-semibold">School</label>{{ edu_form.school }}</div>
+                        <div class="col-md-6"><label class="form-label small fw-semibold">Degree</label>{{ edu_form.degree }}</div>
+                        <div class="col-md-6"><label class="form-label small fw-semibold">Field of Study</label>{{ edu_form.field_of_study }}</div>
+                        <div class="col-md-6"><label class="form-label small fw-semibold">Enrollment Type</label>{{ edu_form.enrollment_type }}</div>
+                        <div class="col-md-3"><label class="form-label small fw-semibold">Start Date</label>{{ edu_form.start_date }}</div>
+                        <div class="col-md-3"><label class="form-label small fw-semibold">End Date</label>{{ edu_form.end_date }}</div>
+                        <div class="col-md-3"><label class="form-label small fw-semibold">Grade</label>{{ edu_form.grade }}</div>
+                        <div class="col-md-12">
+                          <div class="form-check">
+                            {{ edu_form.is_current }}
+                            <label class="form-check-label small" for="{{ edu_form.is_current.id_for_label }}">I currently study here</label>
+                          </div>
+                        </div>
+                        <div class="col-md-12"><label class="form-label small fw-semibold">Description</label>{{ edu_form.description }}<div class="char-counter text-muted small"></div></div>
+                        <div class="col-md-12"><label class="form-label small fw-semibold">Activities</label>{{ edu_form.activities }}<div class="char-counter text-muted small"></div></div>
+                      </div>
+                      {% if edu_form.instance.pk %}
+                        <div class="form-check mt-2">
+                          {{ edu_form.DELETE }}
+                          <label class="form-check-label small text-danger" for="{{ edu_form.DELETE.id_for_label }}">Remove this education entry</label>
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              <div class="d-flex gap-2 mt-4">
+                <button class="btn text-white fw-semibold" type="submit" style="background: linear-gradient(135deg, #1a1a2e, #0f3460);">
+                  Save {{ template_data.section_label }}
+                </button>
+                <a class="btn btn-outline-secondary" href="{% url 'profiles.me' %}">Cancel</a>
               </div>
 
-              {% if exp_form.instance.pk %}
-                <div class="form-check mt-2">
-                  {{ exp_form.DELETE }}
-                  <label class="form-check-label" for="{{ exp_form.DELETE.id_for_label }}">Remove this experience</label>
-                </div>
-              {% endif %}
-            </div>
-          {% endfor %}
+            </form>
+          </div>
         </div>
       </div>
-    {% endif %}
 
-    {% if template_data.education_formset %}
-      {% if template_data.education_formset.non_form_errors %}
-        <div class="alert alert-danger">{{ template_data.education_formset.non_form_errors }}</div>
-      {% endif %}
-      <div class="profile-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">Education Entries</h5>
-          <button type="button" class="btn btn-outline-primary btn-sm" id="add-education">Add Education</button>
-        </div>
-
-        {{ template_data.education_formset.management_form }}
-        <div id="education-forms">
-          {% for edu_form in template_data.education_formset %}
-            <div class="entry-card mb-3">
-              {{ edu_form.id }}
-              {% if edu_form.non_field_errors %}
-                <div class="alert alert-danger">{{ edu_form.non_field_errors }}</div>
-              {% endif %}
-              {% if edu_form.errors %}
-                <ul class="text-danger small mb-2">
-                  {% for field_name, errors in edu_form.errors.items %}
-                    {% for error in errors %}
-                      <li>{{ error }}</li>
-                    {% endfor %}
-                  {% endfor %}
-                </ul>
-              {% endif %}
-
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">School</label>
-                  {{ edu_form.school }}
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Degree</label>
-                  {{ edu_form.degree }}
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Field of Study</label>
-                  {{ edu_form.field_of_study }}
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Enrollment Type</label>
-                  {{ edu_form.enrollment_type }}
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Start Date</label>
-                  {{ edu_form.start_date }}
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">End Date</label>
-                  {{ edu_form.end_date }}
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">Grade</label>
-                  {{ edu_form.grade }}
-                </div>
-                <div class="col-md-12">
-                  <div class="form-check">
-                    {{ edu_form.is_current }}
-                    <label class="form-check-label" for="{{ edu_form.is_current.id_for_label }}">I currently study here</label>
-                  </div>
-                </div>
-                <div class="col-md-12">
-                  <label class="form-label">Description</label>
-                  {{ edu_form.description }}
-                  <div class="char-counter text-muted small"></div>
-                </div>
-                <div class="col-md-12">
-                  <label class="form-label">Activities</label>
-                  {{ edu_form.activities }}
-                  <div class="char-counter text-muted small"></div>
-                </div>
-              </div>
-
-              {% if edu_form.instance.pk %}
-                <div class="form-check mt-2">
-                  {{ edu_form.DELETE }}
-                  <label class="form-check-label" for="{{ edu_form.DELETE.id_for_label }}">Remove this education entry</label>
-                </div>
-              {% endif %}
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
-
-    <div class="d-flex gap-2 mt-3">
-      <button class="btn btn-primary" type="submit">Save {{ template_data.section_label }}</button>
-      <a class="btn btn-outline-secondary" href="{% url 'profiles.me' %}">Cancel</a>
     </div>
-  </form>
+  </div>
 </div>
 
 {% if template_data.experience_formset %}
 <template id="experience-empty-form-template">
-  <div class="entry-card mb-3">
+  <div class="border rounded-3 p-3 mb-3 bg-light">
     {{ template_data.experience_formset.empty_form.id }}
     <div class="row g-3">
-      <div class="col-md-6"><label class="form-label">Company</label>{{ template_data.experience_formset.empty_form.company }}</div>
-      <div class="col-md-6"><label class="form-label">Title</label>{{ template_data.experience_formset.empty_form.title }}</div>
-      <div class="col-md-6"><label class="form-label">Employment Type</label>{{ template_data.experience_formset.empty_form.employment_type }}</div>
-      <div class="col-md-6"><label class="form-label">Location</label>{{ template_data.experience_formset.empty_form.location }}</div>
-      <div class="col-md-6"><label class="form-label">Work Location Type</label>{{ template_data.experience_formset.empty_form.location_type }}</div>
-      <div class="col-md-3"><label class="form-label">Start Date</label>{{ template_data.experience_formset.empty_form.start_date }}</div>
-      <div class="col-md-3"><label class="form-label">End Date</label>{{ template_data.experience_formset.empty_form.end_date }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Company</label>{{ template_data.experience_formset.empty_form.company }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Title</label>{{ template_data.experience_formset.empty_form.title }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Employment Type</label>{{ template_data.experience_formset.empty_form.employment_type }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Location</label>{{ template_data.experience_formset.empty_form.location }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Work Location Type</label>{{ template_data.experience_formset.empty_form.location_type }}</div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Start Date</label>{{ template_data.experience_formset.empty_form.start_date }}</div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">End Date</label>{{ template_data.experience_formset.empty_form.end_date }}</div>
       <div class="col-md-12">
         <div class="form-check">
           {{ template_data.experience_formset.empty_form.is_current }}
-          <label class="form-check-label" for="{{ template_data.experience_formset.empty_form.is_current.id_for_label }}">I currently work here</label>
+          <label class="form-check-label small" for="{{ template_data.experience_formset.empty_form.is_current.id_for_label }}">I currently work here</label>
         </div>
       </div>
-      <div class="col-md-12">
-        <label class="form-label">Description</label>
-        {{ template_data.experience_formset.empty_form.description }}
-        <div class="char-counter text-muted small"></div>
-      </div>
-      <div class="col-md-12">
-        <label class="form-label">Activities</label>
-        {{ template_data.experience_formset.empty_form.activities }}
-        <div class="char-counter text-muted small"></div>
-      </div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">Description</label>{{ template_data.experience_formset.empty_form.description }}<div class="char-counter text-muted small"></div></div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">Activities</label>{{ template_data.experience_formset.empty_form.activities }}<div class="char-counter text-muted small"></div></div>
     </div>
   </div>
 </template>
@@ -256,32 +212,24 @@
 
 {% if template_data.education_formset %}
 <template id="education-empty-form-template">
-  <div class="entry-card mb-3">
+  <div class="border rounded-3 p-3 mb-3 bg-light">
     {{ template_data.education_formset.empty_form.id }}
     <div class="row g-3">
-      <div class="col-md-6"><label class="form-label">School</label>{{ template_data.education_formset.empty_form.school }}</div>
-      <div class="col-md-6"><label class="form-label">Degree</label>{{ template_data.education_formset.empty_form.degree }}</div>
-      <div class="col-md-6"><label class="form-label">Field of Study</label>{{ template_data.education_formset.empty_form.field_of_study }}</div>
-      <div class="col-md-6"><label class="form-label">Enrollment Type</label>{{ template_data.education_formset.empty_form.enrollment_type }}</div>
-      <div class="col-md-3"><label class="form-label">Start Date</label>{{ template_data.education_formset.empty_form.start_date }}</div>
-      <div class="col-md-3"><label class="form-label">End Date</label>{{ template_data.education_formset.empty_form.end_date }}</div>
-      <div class="col-md-3"><label class="form-label">Grade</label>{{ template_data.education_formset.empty_form.grade }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">School</label>{{ template_data.education_formset.empty_form.school }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Degree</label>{{ template_data.education_formset.empty_form.degree }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Field of Study</label>{{ template_data.education_formset.empty_form.field_of_study }}</div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Enrollment Type</label>{{ template_data.education_formset.empty_form.enrollment_type }}</div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Start Date</label>{{ template_data.education_formset.empty_form.start_date }}</div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">End Date</label>{{ template_data.education_formset.empty_form.end_date }}</div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Grade</label>{{ template_data.education_formset.empty_form.grade }}</div>
       <div class="col-md-12">
         <div class="form-check">
           {{ template_data.education_formset.empty_form.is_current }}
-          <label class="form-check-label" for="{{ template_data.education_formset.empty_form.is_current.id_for_label }}">I currently study here</label>
+          <label class="form-check-label small" for="{{ template_data.education_formset.empty_form.is_current.id_for_label }}">I currently study here</label>
         </div>
       </div>
-      <div class="col-md-12">
-        <label class="form-label">Description</label>
-        {{ template_data.education_formset.empty_form.description }}
-        <div class="char-counter text-muted small"></div>
-      </div>
-      <div class="col-md-12">
-        <label class="form-label">Activities</label>
-        {{ template_data.education_formset.empty_form.activities }}
-        <div class="char-counter text-muted small"></div>
-      </div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">Description</label>{{ template_data.education_formset.empty_form.description }}<div class="char-counter text-muted small"></div></div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">Activities</label>{{ template_data.education_formset.empty_form.activities }}<div class="char-counter text-muted small"></div></div>
     </div>
   </div>
 </template>
@@ -296,17 +244,13 @@
       if (!counter) return;
       counter.textContent = input.value.length + "/" + max;
     }
-
     function bindCounters(scope) {
       var fields = scope.querySelectorAll("input[maxlength], textarea[maxlength]");
       fields.forEach(function (field) {
         updateCounter(field);
-        field.addEventListener("input", function () {
-          updateCounter(field);
-        });
+        field.addEventListener("input", function () { updateCounter(field); });
       });
     }
-
     function addForm(prefix, containerId, templateId) {
       var container = document.getElementById(containerId);
       var totalInput = document.getElementById("id_" + prefix + "-TOTAL_FORMS");
@@ -322,16 +266,13 @@
       totalInput.value = index + 1;
       bindCounters(formNode);
     }
-
     bindCounters(document);
-
     var addExperienceBtn = document.getElementById("add-experience");
     if (addExperienceBtn) {
       addExperienceBtn.addEventListener("click", function () {
         addForm("experience", "experience-forms", "experience-empty-form-template");
       });
     }
-
     var addEducationBtn = document.getElementById("add-education");
     if (addEducationBtn) {
       addEducationBtn.addEventListener("click", function () {
@@ -340,4 +281,5 @@
     }
   })();
 </script>
+
 {% endblock content %}

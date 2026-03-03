@@ -1,157 +1,159 @@
 {% extends 'base.html' %}
-
 {% block content %}
 
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h3 class="fw-bold mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}</h3>
-      <div class="d-flex align-items-center gap-2">
-        <span class="text-muted small">
-          {% if template_data.profile.visibility == 'hidden' %}
-            <i class="fas fa-eye-slash me-1"></i>Hidden from recruiters
-          {% else %}
-            <i class="fas fa-eye me-1"></i>Visible to recruiters
-          {% endif %}
-        </span>
-        <a href="{% url 'profiles.toggle_visibility' %}" class="btn btn-sm {% if template_data.profile.visibility == 'hidden' %}btn-outline-secondary{% else %}text-white{% endif %}"{% if template_data.profile.visibility != 'hidden' %}style="background: linear-gradient(135deg, #1a1a2e, #0f3460);"{% endif %}>
-          {% if template_data.profile.visibility == 'hidden' %}Show{% else %}Hide{% endif %}
-        </a>
-      </div>
-    </div>
-    <a href="{% url 'profiles.me' %}" class="btn btn-outline-secondary btn-sm">View Profile</a>
-  </div>
-  <div class="row g-3 mb-4">
-    <div class="col-4">
-      <div class="rounded-3 text-center py-3 bg-light">
-        <h4 class="fw-bold mb-0">{{ template_data.total_applications }}</h4>
-        <small class="text-muted">Total Applied</small>
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="rounded-3 text-center py-3 bg-light">
-        <h4 class="fw-bold mb-0">{{ template_data.pending_applications }}</h4>
-        <small class="text-muted">Under Review</small>
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="rounded-3 text-center py-3 bg-light">
-        <h4 class="fw-bold mb-0">{{ template_data.interview_applications }}</h4>
-        <small class="text-muted">Interviews</small>
-      </div>
-    </div>
-  </div>
+<div style="background-color: #f5f6fa; min-height: 100vh;">
+  <div class="container py-4">
 
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Recommended for You</h5>
-        <a class="btn btn-outline-primary btn-sm" href="{% url 'jobs.list' %}">View All Jobs</a>
-      </div>
-      {% if template_data.profile_is_sparse %}
-        <div class="alert alert-warning py-2">
-          Add more profile details to improve match accuracy.
+    <div class="d-flex justify-content-between align-items-center mb-4 py-3">
+      <div>
+        <h2 class="fw-bold mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}</h2>
+        <p class="text-muted mb-2">Here's what's happening with your job search today.</p>
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted small">
+            {% if template_data.profile.visibility == 'hidden' %}
+              <i class="fas fa-eye-slash me-1"></i>Hidden from recruiters
+            {% else %}
+              <i class="fas fa-eye me-1"></i>Visible to recruiters
+            {% endif %}
+          </span>
+          <a href="{% url 'profiles.toggle_visibility' %}" 
+            class="btn btn-sm {% if template_data.profile.visibility == 'hidden' %}btn-outline-secondary{% else %}text-white{% endif %}"
+            {% if template_data.profile.visibility != 'hidden' %}style="background: linear-gradient(135deg, #1a1a2e, #0f3460);"{% endif %}>
+            {% if template_data.profile.visibility == 'hidden' %}Show{% else %}Hide{% endif %}
+          </a>
         </div>
-      {% endif %}
-      {% if template_data.recommended_jobs %}
-        <div class="row g-3">
-          {% for recommendation in template_data.recommended_jobs %}
-            <div class="col-12 col-lg-6">
-              <div class="card h-100 border-light-subtle">
-                <div class="card-body d-flex justify-content-between gap-3">
+      </div>
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold mb-0">Recommended for You</h6>
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'jobs.list' %}">View All Jobs</a>
+            </div>
+            {% if template_data.profile_is_sparse %}
+              <div class="alert alert-warning py-2 small">
+                Add more profile details to improve match accuracy.
+              </div>
+            {% endif %}
+            {% if template_data.recommended_jobs %}
+              {% for recommendation in template_data.recommended_jobs %}
+                <div class="d-flex justify-content-between align-items-center py-3 {% if not forloop.last %}border-bottom{% endif %}">
                   <div>
                     <h6 class="mb-1">
                       <a class="text-decoration-none" href="{% url 'jobs.detail' recommendation.job.id %}">
                         {{ recommendation.job.title }}
                       </a>
                     </h6>
-                    <div class="text-muted mb-2">{{ recommendation.job.company }}</div>
-                    <div class="small"><strong>Location:</strong> {{ recommendation.job.location }}</div>
-                    <div class="small"><strong>Mode:</strong> {{ recommendation.job.get_mode_display }}</div>
+                    <div class="text-muted small">{{ recommendation.job.company }}</div>
+                    <div class="text-muted small">
+                      <i class="fas fa-map-marker-alt me-1"></i>{{ recommendation.job.location }}
+                      <span class="ms-2"><i class="fas fa-laptop-house me-1"></i>{{ recommendation.job.get_mode_display }}</span>
+                    </div>
                   </div>
-                  <div class="text-center">
-                    {% include 'jobs/_fit_speedometer.html' with score_100=recommendation.fit_score_100 band=recommendation.band size=120 only %}
+                  <div class="text-center flex-shrink-0">
+                    {% include 'jobs/_fit_speedometer.html' with score_100=recommendation.fit_score_100 band=recommendation.band size=100 only %}
                   </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-muted small mb-0">No recommendations available yet. Update your profile and check back soon.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5 d-flex flex-column gap-4">
+
+        <div class="card border-0 shadow-sm {% if template_data.notification_count %}border-danger{% endif %}">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold mb-0">Notifications</h6>
+              {% if template_data.notification_count %}
+                <span class="badge bg-danger">{{ template_data.notification_count }} new</span>
+              {% endif %}
+            </div>
+            {% if template_data.notifications %}
+              <ul class="list-group list-group-flush">
+                {% for item in template_data.notifications %}
+                  <li class="list-group-item px-0 py-2 {% if template_data.notification_count %}list-group-item-warning{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div class="small">
+                        {% if item.application_id %}
+                          <a href="{% url 'applications:detail' item.application_id %}" class="text-decoration-none">{{ item.text }}</a>
+                        {% else %}
+                          {{ item.text }}
+                        {% endif %}
+                      </div>
+                      <small class="text-muted ms-2 text-nowrap">{{ item.created_at|date:"M d, H:i" }}</small>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted small mb-0">No new notifications.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold mb-0">Recent Applications</h6>
+              <a class="btn btn-outline-primary btn-sm" href="{% url 'applications:list' %}">View All</a>
+            </div>
+            {% if template_data.recent_applications %}
+              <ul class="list-group list-group-flush">
+                {% for app in template_data.recent_applications %}
+                  <li class="list-group-item px-0 py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <a href="{% url 'applications:detail' app.id %}" class="text-decoration-none small fw-semibold">{{ app.job.title }}</a>
+                        <div class="text-muted" style="font-size: 0.75rem;">{{ app.created_at|date:"M d, Y" }}</div>
+                      </div>
+                      <span class="badge bg-secondary ms-2">{{ app.get_status_display }}</span>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted small mb-0">You have not applied to any jobs yet.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <h6 class="fw-bold mb-3">My Stats</h6>
+            <div class="row g-2 text-center">
+              <div class="col-4">
+                <div class="rounded-3 py-3 bg-light">
+                  <h4 class="fw-bold mb-0">{{ template_data.total_applications }}</h4>
+                  <small class="text-muted">Applied</small>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="rounded-3 py-3 bg-light">
+                  <h4 class="fw-bold mb-0">{{ template_data.pending_applications }}</h4>
+                  <small class="text-muted">Review</small>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="rounded-3 py-3 bg-light">
+                  <h4 class="fw-bold mb-0">{{ template_data.interview_applications }}</h4>
+                  <small class="text-muted">Interview</small>
                 </div>
               </div>
             </div>
-          {% endfor %}
+          </div>
         </div>
-      {% else %}
-        <div class="alert alert-light mb-0">
-          No recommendations available yet. Update your profile and check back soon.
-        </div>
-      {% endif %}
-    </div>
-  </div>
 
-  <div class="row g-3">
-    <div class="col-md-6">
-      <div class="card h-100 {% if template_data.notification_count %}border-danger shadow-sm{% endif %}">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">New Notifications</h5>
-            {% if template_data.notification_count %}
-              <span class="badge bg-danger">New: {{ template_data.notification_count }}</span>
-            {% endif %}
-          </div>
-          {% if template_data.notification_count %}
-            <div class="alert alert-danger py-2">
-              You have {{ template_data.notification_count }} unread notification{{ template_data.notification_count|pluralize }}.
-            </div>
-          {% endif %}
-          {% if template_data.notifications %}
-            <ul class="list-group list-group-flush">
-              {% for item in template_data.notifications %}
-                <li class="list-group-item px-0 {% if template_data.notification_count %}list-group-item-warning{% endif %}">
-                  <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                      {% if item.application_id %}
-                        <a href="{% url 'applications:detail' item.application_id %}" class="text-decoration-none">
-                          {{ item.text }}
-                        </a>
-                      {% else %}
-                        {{ item.text }}
-                      {% endif %}
-                    </div>
-                    <small class="text-muted ms-2">{{ item.created_at|date:"M d, H:i" }}</small>
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <div class="alert alert-light mb-0">No new notifications.</div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">Recent Application Updates</h5>
-            <a class="btn btn-outline-primary btn-sm" href="{% url 'applications:list' %}">View All</a>
-          </div>
-          {% if template_data.recent_applications %}
-            <ul class="list-group list-group-flush">
-              {% for app in template_data.recent_applications %}
-                <li class="list-group-item px-0">
-                  <div class="d-flex justify-content-between">
-                    <a href="{% url 'applications:detail' app.id %}" class="text-decoration-none">
-                      {{ app.job.title }}
-                    </a>
-                    <span class="badge bg-secondary">{{ app.get_status_display }}</span>
-                  </div>
-                  <small class="text-muted">Applied {{ app.created_at|date:"M d, Y" }}</small>
-                </li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <div class="alert alert-light mb-0">You have not applied to any jobs yet.</div>
-          {% endif %}
-        </div>
       </div>
     </div>
   </div>
 </div>
+
 {% endblock content %}
