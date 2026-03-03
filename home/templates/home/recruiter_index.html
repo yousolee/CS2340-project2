@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="text-dark py-5" style="background: #ffffff;">
+  <div class="container py-5 text-center">
+    <h1 class="display-4 fw-bold mb-3">Find Your Next Great Hire</h1>
+    <p class="lead text-muted mb-4">Post roles, review candidates, and grow your team with confidence.</p>
+    <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mt-4">
+      <a href="{% url 'jobs.create' %}" class="btn btn-primary btn-lg px-4">
+        <i class="fas fa-plus-circle me-2"></i>Post a Job
+      </a>
+      <a href="{% url 'accounts.candidate_search' %}" class="btn btn-outline-primary btn-lg px-4">
+        <i class="fas fa-search me-2"></i>Search Candidates
+      </a>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-center gap-5 mt-4 text-muted">
+    <div class="text-center">
+      <h4 class="fw-bold text-dark mb-0">{{ template_data.my_jobs_count }}</h4>
+      <small>Your Active Posts</small>
+    </div>
+    <div class="text-center">
+      <h4 class="fw-bold text-dark mb-0">{{ template_data.my_application_count }}</h4>
+      <small>Total Applications</small>
+    </div>
+    <div class="text-center">
+      <h4 class="fw-bold text-dark mb-0">{{ template_data.candidate_count }}</h4>
+      <small>Available Candidates</small>
+    </div>
+  </div>
+</div>
+
+<div class="py-5" style="background-color: #f8f9fa;">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-md-4 text-center">
+        <i class="fas fa-pen-to-square fa-4x text-primary mb-3"></i>
+        <h5 class="fw-bold">Publish Open Roles</h5>
+        <p class="text-muted">Create postings quickly and keep your listings organized in one place.</p>
+      </div>
+      <div class="col-md-4 text-center">
+        <i class="fas fa-users fa-4x text-primary mb-3"></i>
+        <h5 class="fw-bold">Review Applicants</h5>
+        <p class="text-muted">Track every applicant status from applied through accepted.</p>
+      </div>
+      <div class="col-md-4 text-center">
+        <i class="fas fa-magnifying-glass-chart fa-4x text-primary mb-3"></i>
+        <h5 class="fw-bold">Discover Top Matches</h5>
+        <p class="text-muted">Use candidate search and recommendations to shortlist faster.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">Your Latest Job Posts</h4>
+    <a href="{% url 'jobs.my_postings' %}" class="btn btn-outline-primary btn-sm">View All</a>
+  </div>
+
+  {% if template_data.recent_my_jobs %}
+    <div class="row g-3">
+      {% for job in template_data.recent_my_jobs %}
+        <div class="col-12 col-lg-6">
+          <a href="{% url 'jobs.detail' job.id %}" class="text-decoration-none text-dark">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title fw-bold mb-1">{{ job.title }}</h5>
+                <h6 class="text-muted mb-3">{{ job.company }}</h6>
+                <p class="mb-1"><i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ job.location }}</p>
+                <p class="mb-0"><i class="fas fa-laptop-house me-2 text-primary"></i>{{ job.get_mode_display }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info mb-0">
+      You have not posted any jobs yet. Start by creating your first listing.
+    </div>
+  {% endif %}
+</div>
+
+<div class="container py-5">
+  <h4 class="text-center fw-bold mb-4">Why Recruiters Use Jobs Finder</h4>
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <ul class="list-unstyled">
+        <li class="d-flex align-items-start mb-4">
+          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+          <div>
+            <h6 class="fw-bold mb-1">Faster Candidate Discovery</h6>
+            <p class="text-muted mb-0">Search profiles by skills, location, and experience to find relevant talent quickly.</p>
+          </div>
+        </li>
+        <li class="d-flex align-items-start mb-4">
+          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+          <div>
+            <h6 class="fw-bold mb-1">Simple Application Pipeline</h6>
+            <p class="text-muted mb-0">Review and move applicants through each stage without leaving the platform.</p>
+          </div>
+        </li>
+        <li class="d-flex align-items-start mb-4">
+          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+          <div>
+            <h6 class="fw-bold mb-1">Direct Candidate Communication</h6>
+            <p class="text-muted mb-0">Start conversations with promising candidates and keep hiring decisions moving.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock content %}
