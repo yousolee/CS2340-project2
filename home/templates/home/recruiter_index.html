@@ -3,16 +3,17 @@
 
 <div class="text-dark py-5" style="background: #ffffff;">
   <div class="container py-5 text-center">
-    <h1 class="display-4 fw-bold mb-3">Find Your Next Great Hire</h1>
+    <h1 id="typewriter-text" style="font-family: 'Poppins', sans-serif; font-style: italic; font-weight: 700; font-size: 3.5rem; line-height: 1.3; min-height: 1.3em;"></h1>
     <p class="lead text-muted mb-4">Post roles, review candidates, and grow your team with confidence.</p>
-    <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mt-4">
-      <a href="{% url 'jobs.create' %}" class="btn btn-primary btn-lg px-4">
-        <i class="fas fa-plus-circle me-2"></i>Post a Job
-      </a>
-      <a href="{% url 'accounts.candidate_search' %}" class="btn btn-outline-primary btn-lg px-4">
-        <i class="fas fa-search me-2"></i>Search Candidates
-      </a>
-    </div>
+    <form method="GET" action="{% url 'accounts.candidate_search' %}" class="mt-4">
+      <div class="input-group input-group-lg mx-auto" style="max-width: 600px;">
+        <input type="text" name="skills" class="form-control" placeholder="Search candidates by skill (e.g. Python, React)..."
+              value="{{ request.GET.skills }}">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="fas fa-search me-2"></i>
+        </button>
+      </div>
+    </form>
   </div>
 
   <div class="d-flex justify-content-center gap-5 mt-4 text-muted">
@@ -53,64 +54,118 @@
   </div>
 </div>
 
-<div class="container py-5">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0 fw-bold">Your Latest Job Posts</h4>
-    <a href="{% url 'jobs.my_postings' %}" class="btn btn-outline-primary btn-sm">View All</a>
-  </div>
+
 
   {% if template_data.recent_my_jobs %}
-    <div class="row g-3">
-      {% for job in template_data.recent_my_jobs %}
-        <div class="col-12 col-lg-6">
-          <a href="{% url 'jobs.detail' job.id %}" class="text-decoration-none text-dark">
-            <div class="card h-100 shadow-sm">
-              <div class="card-body">
-                <h5 class="card-title fw-bold mb-1">{{ job.title }}</h5>
+  <div class="container py-5">
+    <h4 class="text-center mb-4 fw-bold">Your Latest Job Posts</h4>
+    <div id="recruiterCarousel" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner">
+        {% for job in template_data.recent_my_jobs %}
+          <div class="carousel-item {% if forloop.first %}active{% endif %}">
+            <div class="card mx-auto shadow-sm" style="max-width: 600px;">
+              <div class="card-body text-center py-5">
+                <h5 class="card-title fw-bold">{{ job.title }}</h5>
                 <h6 class="text-muted mb-3">{{ job.company }}</h6>
                 <p class="mb-1"><i class="fas fa-map-marker-alt me-2 text-primary"></i>{{ job.location }}</p>
-                <p class="mb-0"><i class="fas fa-laptop-house me-2 text-primary"></i>{{ job.get_mode_display }}</p>
+                <p class="mb-3"><i class="fas fa-laptop-house me-2 text-primary"></i>{{ job.get_mode_display }}</p>
+                {% if job.min_salary and job.max_salary %}
+                  <p class="mb-3 text-success fw-semibold">${{ job.min_salary|floatformat:0 }} – ${{ job.max_salary|floatformat:0 }}</p>
+                {% endif %}
+                <a href="{% url 'jobs.detail' job.id %}" class="btn btn-primary">View Job</a>
               </div>
             </div>
-          </a>
-        </div>
-      {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <button class="carousel-control-prev" type="button" data-bs-target="#recruiterCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" style="filter: invert(1)"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#recruiterCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" style="filter: invert(1)"></span>
+      </button>
+
+      <div class="carousel-indicators position-relative mt-3">
+        {% for job in template_data.recent_my_jobs %}
+          <button type="button" data-bs-target="#recruiterCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+            {% if forloop.first %}class="active bg-primary"{% else %}class="bg-secondary"{% endif %}>
+          </button>
+        {% endfor %}
+      </div>
     </div>
-  {% else %}
-    <div class="alert alert-info mb-0">
-      You have not posted any jobs yet. Start by creating your first listing.
-    </div>
+  </div>
   {% endif %}
 </div>
 
 <div class="container py-5">
   <h4 class="text-center fw-bold mb-4">Why Recruiters Use Jobs Finder</h4>
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <ul class="list-unstyled">
-        <li class="d-flex align-items-start mb-4">
-          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
-          <div>
-            <h6 class="fw-bold mb-1">Faster Candidate Discovery</h6>
-            <p class="text-muted mb-0">Search profiles by skills, location, and experience to find relevant talent quickly.</p>
-          </div>
-        </li>
-        <li class="d-flex align-items-start mb-4">
-          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
-          <div>
-            <h6 class="fw-bold mb-1">Simple Application Pipeline</h6>
-            <p class="text-muted mb-0">Review and move applicants through each stage without leaving the platform.</p>
-          </div>
-        </li>
-        <li class="d-flex align-items-start mb-4">
-          <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
-          <div>
-            <h6 class="fw-bold mb-1">Direct Candidate Communication</h6>
-            <p class="text-muted mb-0">Start conversations with promising candidates and keep hiring decisions moving.</p>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </div>
+  <ul class="list-unstyled" style="max-width: 600px; margin: 0 auto;">
+    <li class="d-flex align-items-start mb-4">
+      <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+      <div>
+        <h6 class="fw-bold mb-1">Faster Candidate Discovery</h6>
+        <p class="text-muted mb-0">Search profiles by skills, location, and experience to find relevant talent quickly.</p>
+      </div>
+    </li>
+    <li class="d-flex align-items-start mb-4">
+      <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+      <div>
+        <h6 class="fw-bold mb-1">Simple Application Pipeline</h6>
+        <p class="text-muted mb-0">Review and move applicants through each stage without leaving the platform.</p>
+      </div>
+    </li>
+    <li class="d-flex align-items-start mb-4">
+      <i class="fas fa-check-circle text-primary me-3 flex-shrink-0" style="margin-top: 3px;"></i>
+      <div>
+        <h6 class="fw-bold mb-1">Direct Candidate Communication</h6>
+        <p class="text-muted mb-0">Start conversations with promising candidates and keep hiring decisions moving.</p>
+      </div>
+    </li>
+  </ul>
 </div>
+
+<script>
+  let current = 0;
+  const track = document.getElementById('recruiter-carousel');
+  const dots = document.querySelectorAll('#carousel-dots div');
+  const total = dots.length;
+
+  function updateCarousel() {
+    track.style.transform = `translateX(-${current * 100}%)`;
+    dots.forEach((d, i) => {
+      d.style.background = i === current ? '#0f3460' : '#cbd5e0';
+    });
+  }
+
+  function moveCarousel(dir) {
+    current = (current + dir + total) % total;
+    updateCarousel();
+  }
+
+  function goToSlide(index) {
+    current = index;
+    updateCarousel();
+  }
+
+  // Auto-advance every 5 seconds
+  setInterval(() => moveCarousel(1), 5000);
+</script>
+
+<script>
+  const text = "Find Your Next Great Hire";
+  const el = document.getElementById('typewriter-text');
+  let i = 0;
+
+  function type() {
+    if (i < text.length) {
+      el.textContent += text.charAt(i);
+      i++;
+      setTimeout(type, 50);
+    }
+  }
+
+  type();
+</script>
+
 {% endblock content %}

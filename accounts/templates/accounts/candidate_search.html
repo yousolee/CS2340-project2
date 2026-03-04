@@ -1,122 +1,151 @@
 {% extends 'base.html' %}
 {% load humanize %}
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
-    <h3>Candidates ({{ template_data.profile_count }})</h3>
-    <div class="d-flex flex-column flex-sm-row gap-2">
-      <form method="GET" action="{% url 'accounts.candidate_search' %}" class="d-flex gap-2">
-        <select name="recommended_job_id" class="form-select">
-          <option value="">Top candidates by my job...</option>
-          {% for job in template_data.recruiter_jobs %}
-            <option value="{{ job.id }}" {% if template_data.selected_recommended_job_id == job.id|stringformat:"s" %}selected{% endif %}>
-              {{ job.title }} ({{ job.company }})
-            </option>
-          {% endfor %}
-        </select>
-        <button type="submit" class="btn btn-success text-nowrap" {% if not template_data.recruiter_jobs %}disabled{% endif %}>
-          <i class="fas fa-magic me-2"></i>Find Top Candidates
+<div style="min-height: 100vh; background: linear-gradient(180deg, #e8f0fe 0%, #ffffff 40%);">
+  <div class="container py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <h3 class="mb-1">Candidates ({{ template_data.profile_count }})</h3>
+        <div class="text-muted">{{ template_data.profile_count }} result{{ template_data.profile_count|pluralize }}</div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn text-white" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);" data-bs-toggle="modal" data-bs-target="#filterModal">
+          <i class="fas fa-filter me-2"></i>Filter Candidates
         </button>
-      </form>
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
-        <i class="fas fa-filter me-2"></i>Filter Candidates
-      </button>
-      {% if template_data.has_filter_criteria %}
-        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#saveSearchModal">
-          <i class="fas fa-bookmark me-2"></i>Save This Search
-        </button>
-      {% endif %}
-      <a href="{% url 'accounts.saved_searches' %}" class="btn btn-outline-secondary">
-        <i class="fas fa-list me-2"></i>Saved Searches
-        {% if template_data.saved_search_count %}
-          <span class="badge bg-primary">{{ template_data.saved_search_count }}</span>
+        {% if template_data.has_filter_criteria %}
+          <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#saveSearchModal">
+            <i class="fas fa-bookmark me-2"></i>Save This Search
+          </button>
         {% endif %}
-      </a>
+        <a href="{% url 'accounts.saved_searches' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-list me-2"></i>Saved Searches
+          {% if template_data.saved_search_count %}
+            <span class="badge bg-primary">{{ template_data.saved_search_count }}</span>
+          {% endif %}
+        </a>
+      </div>
     </div>
-  </div>
 
-  {% if not template_data.recruiter_jobs %}
-    <div class="alert alert-info">
-      Post a job first to use embedding-based candidate recommendations.
-    </div>
-  {% endif %}
+    {% if template_data.selected_recommended_job %}
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <a href="{% url 'accounts.dashboard' %}" onclick="sessionStorage.setItem('dashSection', 'jobs')"
+           class="btn btn-outline-secondary btn-sm">
+          <i class="fas fa-arrow-left me-1"></i>Back to My Jobs
+        </a>
+        <div class="alert alert-light border mb-0 flex-grow-1">
+          Showing top candidates for <strong>{{ template_data.selected_recommended_job.title }}</strong>.
+        </div>
+      </div>
+    {% endif %}
 
-  {% if template_data.selected_recommended_job %}
-    <div class="alert alert-light border">
-      Showing top candidates for <strong>{{ template_data.selected_recommended_job.title }}</strong>.
-    </div>
-  {% endif %}
-
-  {% if template_data.candidate_recommendations %}
-    <div class="row">
-      {% for recommendation in template_data.candidate_recommendations %}
-        {% with profile=recommendation.profile %}
-          <div class="col-12 mb-4">
-            <div class="card">
-              <div class="card-body position-relative">
-                <a
-                  class="stretched-link"
-                  href="{% url 'profiles.public' profile.user.username %}"
-                  aria-label="View {{ profile.user.username }} profile"
-                ></a>
-                <div class="row g-3">
-                  <div class="col-md-9">
-                    <h5 class="card-title">{{ profile.user.first_name }} {{ profile.user.last_name }}</h5>
-                    {% if profile.headline %}
-                      <h6 class="card-subtitle mb-2 text-muted">{{ profile.headline }}</h6>
-                    {% endif %}
-                    <p class="card-text">
-                      {% if profile.location %}
-                        <strong>Location:</strong> {{ profile.location }}<br>
-                      {% endif %}
-                      {% if profile.skills %}
-                        <strong>Skills:</strong> {{ profile.skills }}<br>
-                      {% endif %}
-                      {% if profile.summary %}
-                        <strong>Summary:</strong> {{ profile.summary|truncatewords:30 }}<br>
-                      {% endif %}
-                    </p>
+    {% if template_data.candidate_recommendations %}
+      <div class="row g-3">
+        {% for recommendation in template_data.candidate_recommendations %}
+          {% with profile=recommendation.profile %}
+            <div class="col-12 col-md-6">
+              <div class="card h-100 border-0 shadow-sm {% cycle 'bg-white' 'bg-light' %}" style="border-left: 4px solid #0f3460 !important;">
+                <div class="card-body p-4">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex gap-3 align-items-start">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                           style="width: 44px; height: 44px; background: linear-gradient(135deg, #1a1a2e, #0f3460);">
+                        {{ profile.user.first_name|first|upper|default:profile.user.username|first|upper }}
+                      </div>
+                      <div>
+                        <h6 class="card-title mb-1">
+                          <a class="text-decoration-none" href="{% url 'profiles.public' profile.user.username %}">
+                            {% if profile.user.first_name or profile.user.last_name %}
+                              {{ profile.user.first_name }} {{ profile.user.last_name }}
+                            {% else %}
+                              {{ profile.user.username }}
+                            {% endif %}
+                          </a>
+                        </h6>
+                        {% if profile.headline %}
+                          <div class="text-muted small">{{ profile.headline }}</div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                      {% include 'jobs/_fit_speedometer.html' with score_100=recommendation.fit_score_100 band=recommendation.band size=70 only %}
+                    </div>
                   </div>
-                  <div class="col-md-3 d-flex justify-content-md-end align-items-center">
-                    {% include 'jobs/_fit_speedometer.html' with score_100=recommendation.fit_score_100 band=recommendation.band size=110 only %}
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% if profile.location %}
+                      <span class="badge rounded-pill bg-light text-dark border">
+                        <i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ profile.location }}
+                      </span>
+                    {% endif %}
+                    {% if profile.skills %}
+                      {% for skill in profile.skills.split|slice:":3" %}
+                        <span class="badge rounded-pill bg-light text-dark border">{{ skill|cut:"," }}</span>
+                      {% endfor %}
+                    {% endif %}
+                  </div>
+                  {% if profile.summary %}
+                    <p class="card-text text-muted small mb-3">{{ profile.summary|truncatewords:20 }}</p>
+                  {% endif %}
+                  <div class="d-flex gap-2 position-relative" style="z-index: 2;">
+                    <a href="{% url 'profiles.public' profile.user.username %}" class="btn btn-outline-secondary btn-sm">
+                      <i class="fas fa-user me-1"></i>View Profile
+                    </a>
+                    <a href="{% url 'messaging.start' profile.user.username %}" class="btn btn-primary btn-sm">
+                      <i class="fas fa-envelope me-1"></i>Message
+                    </a>
                   </div>
                 </div>
-                {% if profile.experiences.all %}
-                  <h6 class="mt-3">Experience:</h6>
-                  <ul class="list-unstyled">
-                    {% for exp in profile.experiences.all|slice:":3" %}
-                      <li class="mb-2">
-                        <strong>{{ exp.title }}</strong> at {{ exp.company }}
-                        <br>
-                        <small class="text-muted">
-                          {{ exp.start_date|date:"M Y" }} -
-                          {% if exp.is_current %}Present{% else %}{{ exp.end_date|date:"M Y" }}{% endif %}
-                        </small>
-                      </li>
+              </div>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+
+    {% elif template_data.profiles %}
+      <div class="row g-3">
+        {% for profile in template_data.profiles %}
+          <div class="col-12 col-md-6">
+            <div class="card h-100 border-0 shadow-sm {% cycle 'bg-white' 'bg-light' %}" style="border-left: 4px solid #0f3460 !important;">
+              <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div class="d-flex gap-3 align-items-start">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                         style="width: 44px; height: 44px; background: linear-gradient(135deg, #1a1a2e, #0f3460);">
+                      {{ profile.user.first_name|first|upper|default:profile.user.username|first|upper }}
+                    </div>
+                    <div>
+                      <h6 class="card-title mb-1">
+                        <a class="text-decoration-none" href="{% url 'profiles.public' profile.user.username %}">
+                          {% if profile.user.first_name or profile.user.last_name %}
+                            {{ profile.user.first_name }} {{ profile.user.last_name }}
+                          {% else %}
+                            {{ profile.user.username }}
+                          {% endif %}
+                        </a>
+                      </h6>
+                      {% if profile.headline %}
+                        <div class="text-muted small">{{ profile.headline }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="text-muted small text-nowrap ms-2">{{ profile.user.date_joined|date:"M d, Y" }}</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                  {% if profile.location %}
+                    <span class="badge rounded-pill bg-light text-dark border">
+                      <i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ profile.location }}
+                    </span>
+                  {% endif %}
+                  {% if profile.skills %}
+                    {% for skill in profile.skills.split|slice:":3" %}
+                      <span class="badge rounded-pill bg-light text-dark border">{{ skill|cut:"," }}</span>
                     {% endfor %}
-                  </ul>
+                  {% endif %}
+                </div>
+                {% if profile.summary %}
+                  <p class="card-text text-muted small mb-3">{{ profile.summary|truncatewords:20 }}</p>
                 {% endif %}
-                {% if profile.educations.all %}
-                  <h6 class="mt-3">Education:</h6>
-                  <ul class="list-unstyled">
-                    {% for edu in profile.educations.all|slice:":2" %}
-                      <li class="mb-2">
-                        <strong>{{ edu.school }}</strong>
-                        {% if edu.degree %} - {{ edu.degree }}{% endif %}
-                        {% if edu.field_of_study %} in {{ edu.field_of_study }}{% endif %}
-                      </li>
-                    {% endfor %}
-                  </ul>
-                {% endif %}
-                {% if profile.links %}
-                  <p class="mt-3">
-                    <strong>Links:</strong><br>
-                    {% for link in profile.links.splitlines %}
-                      <a href="{{ link }}" target="_blank" rel="noopener noreferrer" class="d-block position-relative" style="z-index: 2;">{{ link }}</a>
-                    {% endfor %}
-                  </p>
-                {% endif %}
-                <div class="mt-3 d-flex gap-2 position-relative" style="z-index: 2;">
+                <div class="d-flex gap-2 position-relative" style="z-index: 2;">
                   <a href="{% url 'profiles.public' profile.user.username %}" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-user me-1"></i>View Profile
                   </a>
@@ -127,147 +156,73 @@
               </div>
             </div>
           </div>
-        {% endwith %}
-      {% endfor %}
-    </div>
-  {% elif template_data.profiles %}
-    <div class="row">
-      {% for profile in template_data.profiles %}
-        <div class="col-12 mb-4">
-          <div class="card">
-            <div class="card-body position-relative">
-              <a
-                class="stretched-link"
-                href="{% url 'profiles.public' profile.user.username %}"
-                aria-label="View {{ profile.user.username }} profile"
-              ></a>
-              <h5 class="card-title">{{ profile.user.first_name }} {{ profile.user.last_name }}</h5>
-              {% if profile.headline %}
-                <h6 class="card-subtitle mb-2 text-muted">{{ profile.headline }}</h6>
-              {% endif %}
-              
-              <p class="card-text">
-                {% if profile.location %}
-                  <strong>Location:</strong> {{ profile.location }}<br>
-                {% endif %}
-                
-                {% if profile.skills %}
-                  <strong>Skills:</strong> {{ profile.skills }}<br>
-                {% endif %}
-                
-                {% if profile.summary %}
-                  <strong>Summary:</strong> {{ profile.summary|truncatewords:30 }}<br>
-                {% endif %}
-              </p>
-              {% if profile.experiences.all %}
-                <h6 class="mt-3">Experience:</h6>
-                <ul class="list-unstyled">
-                  {% for exp in profile.experiences.all|slice:":3" %}
-                    <li class="mb-2">
-                      <strong>{{ exp.title }}</strong> at {{ exp.company }}
-                      <br>
-                      <small class="text-muted">
-                        {{ exp.start_date|date:"M Y" }} - 
-                        {% if exp.is_current %}Present{% else %}{{ exp.end_date|date:"M Y" }}{% endif %}
-                      </small>
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
-              {% if profile.educations.all %}
-                <h6 class="mt-3">Education:</h6>
-                <ul class="list-unstyled">
-                  {% for edu in profile.educations.all|slice:":2" %}
-                    <li class="mb-2">
-                      <strong>{{ edu.school }}</strong>
-                      {% if edu.degree %} - {{ edu.degree }}{% endif %}
-                      {% if edu.field_of_study %} in {{ edu.field_of_study }}{% endif %}
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
-              {% if profile.links %}
-                <p class="mt-3">
-                  <strong>Links:</strong><br>
-                  {% for link in profile.links.splitlines %}
-                    <a href="{{ link }}" target="_blank" rel="noopener noreferrer" class="d-block position-relative" style="z-index: 2;">{{ link }}</a>
-                  {% endfor %}
-                </p>
-              {% endif %}
-              <div class="mt-3 d-flex gap-2 position-relative" style="z-index: 2;">
-                <a href="{% url 'profiles.public' profile.user.username %}" class="btn btn-outline-secondary btn-sm">
-                  <i class="fas fa-user me-1"></i>View Profile
-                </a>
-                <a href="{% url 'messaging.start' profile.user.username %}" class="btn btn-primary btn-sm">
-                  <i class="fas fa-envelope me-1"></i>Message
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="alert alert-info">
-      {% if template_data.selected_recommended_job %}
-        No top candidates found for this job yet. Try another job or update filters.
-      {% else %}
-        No candidates found matching your criteria. Try adjusting your filters.
-      {% endif %}
-    </div>
-  {% endif %}
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <div class="alert alert-info">
+        {% if template_data.selected_recommended_job %}
+          No top candidates found for this job yet. Try another job or update filters.
+        {% else %}
+          No candidates found matching your criteria. Try adjusting your filters.
+        {% endif %}
+      </div>
+    {% endif %}
+
+  </div>
 </div>
+
 <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="filterModalLabel">Filter Candidates</h5>
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title fw-bold" id="filterModalLabel">Filter Candidates</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="GET" action="{% url 'accounts.candidate_search' %}">
         <div class="modal-body">
           <div class="mb-3">
-            <label for="id_skills" class="form-label">Skills</label>
+            <label class="form-label">Skills</label>
             {{ template_data.form.skills }}
             <small class="form-text text-muted">Separate multiple skills with commas</small>
           </div>
           <div class="mb-3">
-            <label for="id_location" class="form-label">Location</label>
+            <label class="form-label">Location</label>
             {{ template_data.form.location }}
           </div>
           <div class="mb-3">
-            <label for="id_company" class="form-label">Company</label>
+            <label class="form-label">Company</label>
             {{ template_data.form.company }}
             <small class="form-text text-muted">Search by past employers</small>
           </div>
           <div class="mb-3">
-            <label for="id_job_title" class="form-label">Job Title</label>
+            <label class="form-label">Job Title</label>
             {{ template_data.form.job_title }}
             <small class="form-text text-muted">Search by past job titles</small>
           </div>
         </div>
-        <div class="modal-footer">
-          <a href="{% url 'accounts.candidate_search' %}" class="btn btn-secondary">Clear Filters</a>
-          <button type="submit" class="btn btn-primary">Apply Filters</button>
+        <div class="modal-footer border-top">
+          <a href="{% url 'accounts.candidate_search' %}" class="btn btn-outline-secondary">Clear Filters</a>
+          <button type="submit" class="btn text-white" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">Apply Filters</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
 {% if template_data.has_filter_criteria %}
-<!-- Save Search Modal -->
 <div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="saveSearchModalLabel">Save This Search</h5>
+        <h5 class="modal-title fw-bold" id="saveSearchModalLabel">Save This Search</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="POST" action="{% url 'accounts.save_search' %}">
         {% csrf_token %}
         <div class="modal-body">
           <div class="mb-3">
-            <label for="id_name" class="form-label">Search Name</label>
+            <label class="form-label">Search Name</label>
             {{ template_data.saved_search_form.name }}
             <small class="form-text text-muted">Give this search a memorable name</small>
           </div>
@@ -296,4 +251,5 @@
   </div>
 </div>
 {% endif %}
+
 {% endblock content %}

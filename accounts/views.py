@@ -236,7 +236,7 @@ def candidate_search(request):
     form = CandidateSearchForm(request.GET or None)
     selected_recommended_job_id = (request.GET.get("recommended_job_id") or "").strip()
 
-    profiles = Profile.objects.none()
+    profiles = Profile.objects.all()
     candidate_recommendations = []
     selected_recommended_job = None
     profile_count = 0

@@ -181,6 +181,10 @@
                         </div>
                         <div class="d-flex align-items-center gap-2">
                           <div class="text-muted small text-nowrap">{{ job.posted_date|date:"M d, Y" }}</div>
+                          <a href="{% url 'accounts.candidate_search' %}?recommended_job_id={{ job.id }}"
+                            class="btn btn-outline-success btn-sm" title="Find top candidates">
+                            <i class="fas fa-search"></i>
+                          </a>
                           <a href="{% url 'jobs.edit' job.id %}" class="btn btn-outline-secondary btn-sm">
                             <i class="fas fa-pen"></i>
                           </a>
