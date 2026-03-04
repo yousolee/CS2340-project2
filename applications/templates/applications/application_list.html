@@ -1,75 +1,140 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">Applications</h3>
+
+<div id="drawerOverlay" onclick="closeDrawer()"
+     style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1040; display: none; backdrop-filter: blur(2px);"></div>
+
+<div id="filterDrawer"
+     style="position: fixed; top: 0; right: -420px; width: 420px; height: 100vh; background: #1a1a2e; z-index: 1050; transition: right 0.3s ease; box-shadow: -8px 0 40px rgba(0,0,0,0.4); display: flex; flex-direction: column;">
+
+  <div style="padding: 2rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <div style="color: #fff; font-weight: 700; font-size: 1.1rem;">Filter Applications</div>
+      <div style="color: rgba(255,255,255,0.4); font-size: 0.8rem; margin-top: 2px;">Narrow down your results</div>
+    </div>
+    <button onclick="closeDrawer()" style="background: rgba(255,255,255,0.08); border: none; color: #fff; width: 36px; height: 36px; border-radius: 8px; font-size: 1.1rem; cursor: pointer;">✕</button>
   </div>
 
-  <div class="card mb-3">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label">Stage</label>
-          {{ filter_form.status }}
+  <div style="padding: 2rem; flex: 1; overflow-y: auto;">
+    <form method="get" id="filterForm">
+      <div style="margin-bottom: 1.5rem;">
+        <label style="color: rgba(255,255,255,0.6); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 0.5rem;">Stage</label>
+        <div style="color: #fff;">{{ filter_form.status }}</div>
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <label style="color: rgba(255,255,255,0.6); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 0.5rem;">Applied From</label>
+        {{ filter_form.date_from }}
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <label style="color: rgba(255,255,255,0.6); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 0.5rem;">Applied To</label>
+        {{ filter_form.date_to }}
+      </div>
+      {% if recruiter_view %}
+        <div style="margin-bottom: 1.5rem;">
+          <label style="color: rgba(255,255,255,0.6); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 0.5rem;">Job</label>
+          {{ filter_form.job }}
         </div>
-        <div class="col-md-3">
-          <label class="form-label">Applied From</label>
-          {{ filter_form.date_from }}
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Applied To</label>
-          {{ filter_form.date_to }}
-        </div>
-        {% if recruiter_view %}
-          <div class="col-md-3">
-            <label class="form-label">Job</label>
-            {{ filter_form.job }}
-          </div>
-        {% endif %}
-        <div class="col-12 d-flex gap-2 mt-2">
-          <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
-          <a href="{% url 'applications:list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
-        </div>
-      </form>
-    </div>
+      {% endif %}
+    </form>
   </div>
 
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Job</th>
-            {% if recruiter_view %}
-              <th>Applicant</th>
-            {% endif %}
-            <th>Status</th>
-            <th>Applied</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for app in applications %}
-            <tr>
-              <td>{{ app.job.title }}</td>
-              {% if recruiter_view %}
-                <td>{{ app.applicant.username }}</td>
-              {% endif %}
-              <td>{{ app.get_status_display }}</td>
-              <td>{{ app.created_at|date:"M d, Y H:i" }}</td>
-              <td><a class="btn btn-outline-primary btn-sm" href="{% url 'applications:detail' app.pk %}">View</a></td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="{% if recruiter_view %}5{% else %}4{% endif %}" class="text-center py-4">
-                No applications found for this filter.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  <div style="padding: 1.5rem 2rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 0.75rem;">
+    <button onclick="document.getElementById('filterForm').submit()"
+      style="flex: 1; background: linear-gradient(135deg, #1a1a2e, #0f3460); border: none; color: #fff; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer;">
+      Apply Filters
+    </button>
+    <a href="{% url 'applications:list' %}"
+      style="flex: 1; background: rgba(255,255,255,0.08); border: none; color: #fff; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none;">
+      Clear
+    </a>
   </div>
 </div>
+
+<div style="background: #f5f6fa; min-height: calc(100vh - 60px); padding: 2.5rem 0;">
+  <div class="container">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <div>
+        <h3 style="color: #1a1a2e; font-weight: 700; margin: 0;">Applications</h3>
+        <p style="color: #718096; font-size: 0.85rem; margin: 0.25rem 0 0;">
+          {{ applications|length }} application{{ applications|length|pluralize }} found
+        </p>
+      </div>
+      <button onclick="openDrawer()"
+              style="background: linear-gradient(135deg, #1a1a2e, #0f3460); border: none; color: #fff; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.88rem; cursor: pointer;">
+        <i class="fas fa-sliders-h me-2"></i>Filters
+      </button>
+    </div>
+
+    {% if applications %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for app in applications %}
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 4px solid #0f3460; border-radius: 12px; box-shadow: 0 2px 8px rgba(15,52,96,0.06); transition: transform 0.15s, box-shadow 0.15s;">
+            <div style="padding: 1.25rem 1.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h6 style="color: #1a1a2e; font-weight: 700; margin-bottom: 0.2rem; font-size: 1rem;">{{ app.job.title }}</h6>
+                  <p style="color: #718096; font-size: 0.82rem; margin-bottom: 0.75rem;">{{ app.job.company }}</p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                    {% if recruiter_view %}
+                      <span style="color: #718096; font-size: 0.82rem;">
+                        <i class="fas fa-user me-1" style="color: #0f3460;"></i>{{ app.applicant.username }}
+                      </span>
+                    {% endif %}
+                    <span style="color: #718096; font-size: 0.82rem;">
+                      <i class="fas fa-calendar me-1" style="color: #0f3460;"></i>{{ app.created_at|date:"M d, Y" }}
+                    </span>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  {% with status=app.get_status_display %}
+                    {% if "Rejected" in status or "Closed" in status %}
+                      <span style="background: rgba(239,68,68,0.1); color: #e53e3e; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.85rem; border-radius: 20px; letter-spacing: 0.03em;">{{ status }}</span>
+                    {% elif "Interview" in status %}
+                      <span style="background: rgba(237,137,54,0.1); color: #dd6b20; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.85rem; border-radius: 20px; letter-spacing: 0.03em;">{{ status }}</span>
+                    {% elif "Accepted" in status or "Offer" in status %}
+                      <span style="background: rgba(72,187,120,0.1); color: #276749; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.85rem; border-radius: 20px; letter-spacing: 0.03em;">{{ status }}</span>
+                    {% else %}
+                      <span style="background: rgba(15,52,96,0.08); color: #0f3460; font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.85rem; border-radius: 20px; letter-spacing: 0.03em;">{{ status }}</span>
+                    {% endif %}
+                  {% endwith %}
+                  <a href="{% url 'applications:detail' app.pk %}"
+                     style="background: linear-gradient(135deg, #1a1a2e, #0f3460); border: none; color: #fff; padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; text-decoration: none; white-space: nowrap;">
+                    View
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 5rem 0;">
+        <i class="fas fa-folder-open fa-3x mb-3" style="color: #cbd5e0;"></i>
+        <p style="color: #a0aec0; font-size: 0.95rem;">No applications found for this filter.</p>
+        <a href="{% url 'applications:list' %}" style="color: #0f3460; font-size: 0.85rem;">Clear filters</a>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+  function openDrawer() {
+    document.getElementById('filterDrawer').style.right = '0';
+    document.getElementById('drawerOverlay').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    document.getElementById('filterDrawer').style.right = '-420px';
+    document.getElementById('drawerOverlay').style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  {% if request.GET %}
+    window.addEventListener('DOMContentLoaded', openDrawer);
+  {% endif %}
+</script>
+
 {% endblock %}

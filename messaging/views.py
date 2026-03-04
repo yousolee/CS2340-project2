@@ -8,9 +8,7 @@ from accounts.utils import is_recruiter as is_recruiter_check
 from .models import Conversation, Message
 
 
-@login_required
-def inbox(request):
-    user = request.user
+def get_conversations_data(user):
     if is_recruiter_check(user):
         conversations = Conversation.objects.filter(
             recruiter=user
@@ -31,10 +29,19 @@ def inbox(request):
             'last_message': last_msg,
             'unread': unread,
         })
+    return conversations_data
+
+
+@login_required
+def inbox(request):
+    user = request.user
+    conversations_data = get_conversations_data(user)
 
     return render(request, 'messaging/inbox.html', {
         'template_data': {'title': 'Messages'},
         'conversations_data': conversations_data,
+        'active_conversation': None,
+        'is_recruiter': is_recruiter_check(user),
     })
 
 
@@ -46,7 +53,6 @@ def conversation_detail(request, conversation_id):
     if user != conversation.recruiter and user != conversation.job_seeker:
         return HttpResponseForbidden('You are not a participant in this conversation.')
 
-    # Mark incoming messages as read
     conversation.messages.filter(is_read=False).exclude(sender=user).update(is_read=True)
 
     if request.method == 'POST':
@@ -59,12 +65,15 @@ def conversation_detail(request, conversation_id):
 
     other = conversation.other_participant(user)
     msgs = conversation.messages.select_related('sender')
+    conversations_data = get_conversations_data(user)
 
-    return render(request, 'messaging/conversation.html', {
+    return render(request, 'messaging/inbox.html', {
         'template_data': {'title': f'Chat with {other.username}'},
-        'conversation': conversation,
+        'conversations_data': conversations_data,
+        'active_conversation': conversation,
         'messages': msgs,
         'other': other,
+        'is_recruiter': is_recruiter_check(user),
     })
 
 
