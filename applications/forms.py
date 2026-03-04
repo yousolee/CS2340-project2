@@ -8,7 +8,14 @@ class ApplicationForm(forms.ModelForm):
         model = Application
         fields = ['note', 'resume']
         widgets = {
-            'note': forms.Textarea(attrs={'rows': 6}),
+            'note': forms.Textarea(
+                attrs={
+                    'rows': 6,
+                    'class': 'form-control',
+                    'placeholder': 'Briefly explain why you are a good fit (optional).',
+                }
+            ),
+            'resume': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
 
 

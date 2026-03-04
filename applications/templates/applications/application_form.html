@@ -1,10 +1,88 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h2>Apply for: {{ job.title }} at {{ job.company }}</h2>
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Submit Application</button>
-  </form>
+<div class="container py-4">
+  <div class="mb-3">
+    <a class="text-decoration-none" href="{% url 'jobs.detail' job.id %}">&larr; Back to job details</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h3 class="mb-1">Apply to {{ job.title }}</h3>
+          <p class="text-muted mb-4">{{ job.company }}{% if job.location %} • {{ job.location }}{% endif %}</p>
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="{{ form.note.id_for_label }}" class="form-label fw-semibold">Application Note</label>
+              {{ form.note }}
+              <div class="form-text">Share relevant experience, interest, or availability.</div>
+              {% if form.note.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.note.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label for="{{ form.resume.id_for_label }}" class="form-label fw-semibold">Resume</label>
+              {{ form.resume }}
+              <div class="form-text">Upload your latest resume (optional).</div>
+              {% if form.resume.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.resume.errors %}
+                    <div>{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="d-flex flex-column flex-sm-row gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-paper-plane me-2"></i>Submit Application
+              </button>
+              <a href="{% url 'jobs.detail' job.id %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body p-4">
+          <h5 class="mb-3">Job Snapshot</h5>
+          <div class="small text-muted mb-2">Position</div>
+          <div class="mb-3 fw-semibold">{{ job.title }}</div>
+
+          <div class="small text-muted mb-2">Company</div>
+          <div class="mb-3">{{ job.company }}</div>
+
+          <div class="small text-muted mb-2">Location</div>
+          <div class="mb-3">{{ job.location|default:"Not specified" }}</div>
+
+          <div class="small text-muted mb-2">Work Mode</div>
+          <div class="mb-4">{{ job.get_mode_display }}</div>
+
+          <div class="alert alert-light border mb-0">
+            <strong>Tip:</strong> Keep your note short and specific. Mention one to two experiences directly relevant to this role.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
