@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin-dashboard/export/users/', views.admin_export_users, name='accounts.admin_export_users'),
     path('admin-dashboard/export/jobs/', views.admin_export_jobs, name='accounts.admin_export_jobs'),
     path('admin-dashboard/export/applications/', views.admin_export_applications, name='accounts.admin_export_applications'),
+    path('recruiter/profile/', views.edit_recruiter_profile, name='accounts.edit_recruiter_profile'),
 ]

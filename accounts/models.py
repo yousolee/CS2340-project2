@@ -10,6 +10,7 @@ class Recruiter(models.Model):
     )
     company_name = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    logo = models.ImageField(upload_to='recruiter_logos/', null=True, blank=True)
 
     def __str__(self):
         label = self.company_name or 'Recruiter'

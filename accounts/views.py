@@ -19,7 +19,7 @@ from jobs.recommendations.service import recommend_jobs_for_profile, recommend_p
 from profiles.models import Profile
 
 from .models import Recruiter, SavedSearch
-from .forms import CandidateSearchForm, CustomErrorList, CustomUserCreationForm, SavedSearchForm
+from .forms import CandidateSearchForm, CustomErrorList, CustomUserCreationForm, SavedSearchForm, RecruiterProfileForm
 from .utils import (
     filter_candidate_profiles,
     get_user_role,
@@ -130,11 +130,24 @@ def dashboard(request):
                 id__in=[notification.id for notification in unread_notifications]
             ).update(is_read=True)
 
+        status_breakdown = Application.objects.filter(job__posted_by=recruiter).values('status').annotate(count=Count('id'))
+        status_map = {s['status']: s['count'] for s in status_breakdown}
+        statuses = Application.Status.choices
+        status_labels = [label for _, label in statuses]
+        status_counts = [status_map.get(value, 0) for value, _ in statuses]
+        saved_searches = SavedSearch.objects.filter(recruiter=recruiter)
+        recruiter_jobs = Job.objects.filter(posted_by=recruiter).order_by('-posted_date')
+
+
         template_data = {
             'title': 'Recruiter Dashboard',
             'posted_jobs_count': posted_jobs.count(),
             'recent_jobs': posted_jobs[:5],
             'recent_applications': recent_applications,
+            'status_labels': status_labels,
+            'status_counts': status_counts,
+            'saved_searches': saved_searches,
+            'recruiter_jobs': recruiter_jobs,
             'notifications': [
                 {
                     'id': notification.id,
@@ -563,3 +576,11 @@ def admin_export_applications(request):
         ])
 
     return response
+
+def edit_recruiter_profile(request):
+    recruiter = request.user.recruiter_profile
+    form = RecruiterProfileForm(request.POST or None, request.FILES or None, instance=recruiter)
+    if form.is_valid():
+        form.save()
+        return redirect('accounts.dashboard')
+    return render(request, 'accounts/edit_recruiter_profile.html', {'form': form})

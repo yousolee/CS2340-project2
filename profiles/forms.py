@@ -42,6 +42,16 @@ BASE_PROFILE_WIDGETS = {
 
 
 class BasicProfileForm(forms.ModelForm):
+
+    first_name = forms.CharField(
+        max_length=30, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'})
+    )
+    last_name = forms.CharField(
+        max_length=30, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'})
+    )
+
     class Meta:
         model = Profile
         fields = ["headline", "location"]
@@ -49,6 +59,21 @@ class BasicProfileForm(forms.ModelForm):
             "headline": BASE_PROFILE_WIDGETS["headline"],
             "location": BASE_PROFILE_WIDGETS["location"],
         }
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user:
+            self.fields['first_name'].initial = self.user.first_name
+            self.fields['last_name'].initial = self.user.last_name
+
+    def save(self, commit=True):
+        profile = super().save(commit=commit)
+        if self.user:
+            self.user.first_name = self.cleaned_data.get('first_name', '')
+            self.user.last_name = self.cleaned_data.get('last_name', '')
+            self.user.save()
+        return profile
 
 
 class AboutProfileForm(forms.ModelForm):

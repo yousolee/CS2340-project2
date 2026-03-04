@@ -61,7 +61,7 @@
                 ></a>
                 <div class="row g-3">
                   <div class="col-md-9">
-                    <h5 class="card-title">{{ profile.user.username }}</h5>
+                    <h5 class="card-title">{{ profile.user.first_name }} {{ profile.user.last_name }}</h5>
                     {% if profile.headline %}
                       <h6 class="card-subtitle mb-2 text-muted">{{ profile.headline }}</h6>
                     {% endif %}
@@ -141,7 +141,7 @@
                 href="{% url 'profiles.public' profile.user.username %}"
                 aria-label="View {{ profile.user.username }} profile"
               ></a>
-              <h5 class="card-title">{{ profile.user.username }}</h5>
+              <h5 class="card-title">{{ profile.user.first_name }} {{ profile.user.last_name }}</h5>
               {% if profile.headline %}
                 <h6 class="card-subtitle mb-2 text-muted">{{ profile.headline }}</h6>
               {% endif %}

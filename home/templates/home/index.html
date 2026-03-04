@@ -3,7 +3,7 @@
 
 <div class="text-dark py-5" style="background: #ffffff;">
   <div class="container py-5 text-center">
-    <h1 class="display-4 fw-bold mb-3">Find Your Next Opportunity</h1>
+    <h1 id="typewriter-text" style="font-family: 'Poppins', sans-serif; font-style: italic; font-weight: 700; font-size: 3.5rem; line-height: 1.3; min-height: 1.3em;"></h1>
     <p class="lead text-muted mb-4">Connect with top employers and land your ideal job.</p>
     <form method="GET" action="{% url 'jobs.list' %}" class="mt-4">
       <div class="input-group input-group-lg mx-auto" style="max-width: 600px;">
@@ -140,4 +140,20 @@
     </div>
   </div>
 </div>
+
+<script>
+  const text = "Find Your Next Opportunity";
+  const el = document.getElementById('typewriter-text');
+  let i = 0;
+
+  function type() {
+    if (i < text.length) {
+      el.textContent += text.charAt(i);
+      i++;
+      setTimeout(type, 50);
+    }
+  }
+
+  type();
+</script>
 {% endblock content %}

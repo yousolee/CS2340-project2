@@ -22,6 +22,16 @@
       <form method="POST" class="text-start">
         {% csrf_token %}
         <div class="mb-3">
+          <label for="{{ template_data.form.first_name.id_for_label }}" class="form-label fw-semibold small">First Name</label>
+          {{ template_data.form.first_name }}
+          {{ template_data.form.first_name.errors }}
+        </div>
+        <div class="mb-3">
+          <label for="{{ template_data.form.last_name.id_for_label }}" class="form-label fw-semibold small">Last Name</label>
+          {{ template_data.form.last_name }}
+          {{ template_data.form.last_name.errors }}
+        </div>
+        <div class="mb-3">
           <label for="{{ template_data.form.username.id_for_label }}" class="form-label fw-semibold small">Username</label>
           {{ template_data.form.username }}
           {{ template_data.form.username.errors }}

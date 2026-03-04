@@ -71,7 +71,11 @@ def edit_profile_section(request, section):
 
     if section in PROFILE_SECTION_FORMS:
         form_class = PROFILE_SECTION_FORMS[section]
-        form = form_class(request.POST or None, instance=profile, prefix="profile")
+        if section == 'basic':
+            form = form_class(request.POST or None, instance=profile, prefix="profile", user=request.user)
+        else:
+            form = form_class(request.POST or None, instance=profile, prefix="profile")
+        
         if request.method == "POST" and form.is_valid():
             form.save()
             return redirect("profiles.me")

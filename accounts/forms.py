@@ -33,9 +33,21 @@ class CustomUserCreationForm(UserCreationForm):
         help_text='Optional (used for recruiter accounts).',
     )
 
+    first_name = forms.CharField(
+        max_length=30, 
+        required=True, 
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+
+    last_name = forms.CharField(
+        max_length=30, 
+        required=True, 
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+
     def __init__(self, *args, **kwargs):
         super(CustomUserCreationForm, self).__init__(*args, **kwargs)
-        for fieldname in ['username', 'password1', 'password2', 'company_name']:
+        for fieldname in ['username', 'password1', 'password2', 'company_name', 'first_name', 'last_name']:
             self.fields[fieldname].help_text = None
             self.fields[fieldname].widget.attrs.update({'class': 'form-control'})
 
@@ -43,6 +55,10 @@ class CustomUserCreationForm(UserCreationForm):
         user = super().save(commit=commit)
         if not commit:
             return user
+        
+        user.first_name = self.cleaned_data.get('first_name', '')
+        user.last_name = self.cleaned_data.get('last_name', '')
+        user.save()
 
         account_type = self.cleaned_data.get('account_type')
         company_name = self.cleaned_data.get('company_name', '').strip()
@@ -90,3 +106,12 @@ class SavedSearchForm(forms.Form):
     location = forms.CharField(required=False, widget=forms.HiddenInput())
     company = forms.CharField(required=False, widget=forms.HiddenInput())
     job_title = forms.CharField(required=False, widget=forms.HiddenInput())
+
+class RecruiterProfileForm(forms.ModelForm):
+    class Meta:
+        model = Recruiter
+        fields = ['company_name', 'logo']
+        widgets = {
+            'company_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }

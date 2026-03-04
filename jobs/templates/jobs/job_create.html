@@ -1,88 +1,222 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-        <div class="card-body">
-          <h3 class="mb-3">{{ template_data.form_heading|default:"Create Job Posting" }}</h3>
-          <form method="POST">
+<div style="min-height: calc(100vh - 60px); background: linear-gradient(135deg, #f8f9ff 0%, #eef1f7 100%); padding: 3rem 0;">
+  <div class="container-fluid px-4">
+
+    <div style="border: none; border-radius: 16px; box-shadow: 0 4px 6px rgba(15,52,96,0.06), 0 20px 60px rgba(15,52,96,0.12); overflow: hidden;">
+
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); padding: 1.75rem 2.5rem;">
+        <h3 style="color: #fff; font-weight: 700; font-size: 1.5rem; margin: 0;">
+          {{ template_data.form_heading|default:"Create Job Posting" }}
+        </h3>
+        <p style="color: rgba(255,255,255,0.6); margin: 0.25rem 0 0; font-size: 0.88rem;">
+          Fill in the details below to post a new opportunity
+        </p>
+      </div>
+
+      <div class="d-flex" style="background: #fff; min-height: 600px;">
+
+        <div style="flex: 1; padding: 2rem 2.5rem; border-right: 2px solid #eef1f7;">
+          <form method="POST" id="jobForm">
             {% csrf_token %}
 
-            <div class="mb-3">
-              <label for="{{ template_data.form.title.id_for_label }}" class="form-label">Title</label>
-              {{ template_data.form.title }}
-              {{ template_data.form.title.errors }}
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label for="{{ template_data.form.title.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748;" class="form-label">Job Title</label>
+                {{ template_data.form.title }}
+                {{ template_data.form.title.errors }}
+              </div>
+              <div class="col-md-4">
+                <label for="{{ template_data.form.company.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748;" class="form-label">Company</label>
+                {{ template_data.form.company }}
+                {{ template_data.form.company.errors }}
+              </div>
+              <div class="col-md-4">
+                <label for="{{ template_data.form.location.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748;" class="form-label">Location</label>
+                {{ template_data.form.location }}
+                {{ template_data.form.location.errors }}
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label for="{{ template_data.form.company.id_for_label }}" class="form-label">Company</label>
-              {{ template_data.form.company }}
-              {{ template_data.form.company.errors }}
+            <div class="row g-3 mb-3 align-items-end">
+              <div class="col-md-3">
+                <label for="{{ template_data.form.mode.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748;" class="form-label">Work Mode</label>
+                {{ template_data.form.mode }}
+                {{ template_data.form.mode.errors }}
+              </div>
+              <div class="col-md-3">
+                <label for="{{ template_data.form.min_salary.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748;" class="form-label">Min Salary</label>
+                <div class="d-flex">
+                  <span style="background: #eef1f7; border: 1.5px solid #e2e8f0; border-right: none; border-radius: 8px 0 0 8px; padding: 0.5rem 0.75rem; color: #718096; font-size: 0.88rem; font-weight: 600;">$</span>
+                  {{ template_data.form.min_salary }}
+                </div>
+                {{ template_data.form.min_salary.errors }}
+              </div>
+              <div class="col-md-3">
+                <label for="{{ template_data.form.max_salary.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748;" class="form-label">Max Salary</label>
+                <div class="d-flex">
+                  <span style="background: #eef1f7; border: 1.5px solid #e2e8f0; border-right: none; border-radius: 8px 0 0 8px; padding: 0.5rem 0.75rem; color: #718096; font-size: 0.88rem; font-weight: 600;">$</span>
+                  {{ template_data.form.max_salary }}
+                </div>
+                {{ template_data.form.max_salary.errors }}
+              </div>
+              <div class="col-md-3">
+                <div style="background: linear-gradient(135deg, #f0f7ff, #e8f4ff); border: 1.5px solid #bee3f8; border-radius: 10px; padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.6rem; height: 38px;">
+                  {{ template_data.form.visa_sponsorship }}
+                  <label for="{{ template_data.form.visa_sponsorship.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748; cursor: pointer; margin: 0; white-space: nowrap;">
+                    Visa Sponsorship
+                  </label>
+                </div>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label for="{{ template_data.form.location.id_for_label }}" class="form-label">Location</label>
-              {{ template_data.form.location }}
-              {{ template_data.form.location.errors }}
-            </div>
+            <div style="border-top: 2px solid #eef1f7; margin: 1.25rem 0;"></div>
 
             <div class="mb-3">
-              <label for="{{ template_data.form.description.id_for_label }}" class="form-label">Description</label>
+              <label for="{{ template_data.form.description.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748;" class="form-label">Description</label>
               {{ template_data.form.description }}
               {{ template_data.form.description.errors }}
             </div>
 
             <div class="mb-3">
-              <label for="{{ template_data.form.skills.id_for_label }}" class="form-label">Skills</label>
+              <label for="{{ template_data.form.skills.id_for_label }}" style="font-weight: 600; font-size: 0.82rem; color: #2d3748;" class="form-label">Required Skills</label>
               {{ template_data.form.skills }}
               {{ template_data.form.skills.errors }}
             </div>
 
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label for="{{ template_data.form.min_salary.id_for_label }}" class="form-label">Min Salary</label>
-                {{ template_data.form.min_salary }}
-                {{ template_data.form.min_salary.errors }}
-              </div>
-              <div class="col-md-6 mb-3">
-                <label for="{{ template_data.form.max_salary.id_for_label }}" class="form-label">Max Salary</label>
-                {{ template_data.form.max_salary }}
-                {{ template_data.form.max_salary.errors }}
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <label for="{{ template_data.form.mode.id_for_label }}" class="form-label">Work Mode</label>
-              {{ template_data.form.mode }}
-              {{ template_data.form.mode.errors }}
-            </div>
-
-            <div class="mb-3 form-check">
-              {{ template_data.form.visa_sponsorship }}
-              <label class="form-check-label" for="{{ template_data.form.visa_sponsorship.id_for_label }}">
-                Visa Sponsorship Available
-              </label>
-              {{ template_data.form.visa_sponsorship.errors }}
-            </div>
-
             {% if template_data.form.errors %}
-              <div class="alert alert-danger">
+              <div class="alert alert-danger rounded-3 py-2 px-3" style="font-size: 0.85rem;">
                 Please fix the highlighted errors and try again.
               </div>
             {% endif %}
 
-            <button type="submit" class="btn btn-success">{{ template_data.submit_label|default:"Create Job" }}</button>
-            {% if template_data.cancel_to_job %}
-              <a href="{% url 'jobs.detail' template_data.job_id %}" class="btn btn-outline-secondary">Cancel</a>
-            {% else %}
-              <a href="{% url 'jobs.list' %}" class="btn btn-outline-secondary">Cancel</a>
-            {% endif %}
+            <div class="d-flex gap-3" style="padding-top: 1rem; border-top: 1.5px solid #eef1f7; margin-top: 0.5rem;">
+              <button type="submit" style="background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); border: none; color: #fff; padding: 0.6rem 2rem; border-radius: 8px; font-weight: 600; font-size: 0.88rem;">
+                {{ template_data.submit_label|default:"Create Job" }}
+              </button>
+              {% if template_data.cancel_to_job %}
+                <a href="{% url 'jobs.detail' template_data.job_id %}" style="border: 1.5px solid #e2e8f0; background: transparent; color: #718096; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600; font-size: 0.88rem; text-decoration: none;">Cancel</a>
+              {% else %}
+                <a href="{% url 'jobs.list' %}" style="border: 1.5px solid #e2e8f0; background: transparent; color: #718096; padding: 0.6rem 1.5rem; border-radius: 8px; font-weight: 600; font-size: 0.88rem; text-decoration: none;">Cancel</a>
+              {% endif %}
+            </div>
+
           </form>
         </div>
+
+        <div style="width: 360px; flex-shrink: 0; padding: 2rem; background: #f8f9ff;">
+          <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #0f3460; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 2px rgba(34,197,94,0.3);"></span>
+            Live Preview
+          </div>
+
+          <div style="background: #fff; border-radius: 12px; border: 1.5px solid #e2e8f0; overflow: hidden; box-shadow: 0 2px 12px rgba(15,52,96,0.07);">
+            <div style="background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); padding: 1.25rem 1.5rem;">
+              <div id="prev-title" style="color: #fff; font-weight: 700; font-size: 1.1rem; min-height: 1.4rem;">Job Title</div>
+              <div id="prev-company" style="color: rgba(255,255,255,0.7); font-size: 0.82rem; margin-top: 0.2rem; min-height: 1rem;">Company</div>
+            </div>
+
+            <div style="padding: 1.25rem 1.5rem;">
+
+              <div class="d-flex flex-wrap gap-2 mb-3" id="prev-badges">
+                <span id="prev-location-badge" style="display:none; background: #eef1f7; color: #4a5568; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 20px;">📍 Location</span>
+                <span id="prev-mode-badge" style="background: #e8f4ff; color: #0f3460; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 20px;">🏢 On-Site</span>
+                <span id="prev-visa-badge" style="display:none; background: #f0fff4; color: #276749; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 20px;">✅ Visa Sponsorship</span>
+              </div>
+
+              <div id="prev-salary-row" style="display:none; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #718096;">Salary</span>
+                <div id="prev-salary" style="font-weight: 700; color: #1a1a2e; font-size: 1rem; margin-top: 0.15rem;"></div>
+              </div>
+
+              <div id="prev-desc-row" style="display:none; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #718096;">Description</span>
+                <div id="prev-description" style="font-size: 0.82rem; color: #4a5568; margin-top: 0.3rem; line-height: 1.6; max-height: 120px; overflow-y: auto;"></div>
+              </div>
+
+              <div id="prev-skills-row" style="display:none;">
+                <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #718096;">Skills</span>
+                <div id="prev-skills" class="d-flex flex-wrap gap-1 mt-1"></div>
+              </div>
+
+              <div id="prev-empty" style="text-align: center; padding: 1.5rem 0; color: #a0aec0; font-size: 0.82rem;">
+                Start filling in the form to see a preview
+              </div>
+
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  function getVal(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  }
+
+  function updatePreview() {
+    const title = getVal('id_title');
+    const company = getVal('id_company');
+    const location = getVal('id_location');
+    const minSalary = getVal('id_min_salary');
+    const maxSalary = getVal('id_max_salary');
+    const description = getVal('id_description');
+    const skills = getVal('id_skills');
+    const modeEl = document.getElementById('id_mode');
+    const mode = modeEl ? modeEl.options[modeEl.selectedIndex]?.text : '';
+    const visa = document.getElementById('id_visa_sponsorship')?.checked;
+
+    document.getElementById('prev-title').textContent = title || 'Job Title';
+    document.getElementById('prev-company').textContent = company || 'Company';
+
+    const locBadge = document.getElementById('prev-location-badge');
+    if (location) { locBadge.style.display = ''; locBadge.textContent = '📍 ' + location; }
+    else { locBadge.style.display = 'none'; }
+
+    document.getElementById('prev-mode-badge').textContent = '🏢 ' + (mode || 'On-Site');
+
+    document.getElementById('prev-visa-badge').style.display = visa ? '' : 'none';
+
+    const salaryRow = document.getElementById('prev-salary-row');
+    if (minSalary || maxSalary) {
+      salaryRow.style.display = '';
+      const min = minSalary ? '$' + Number(minSalary).toLocaleString() : '';
+      const max = maxSalary ? '$' + Number(maxSalary).toLocaleString() : '';
+      document.getElementById('prev-salary').textContent = min && max ? min + ' – ' + max : (min || max);
+    } else {
+      salaryRow.style.display = 'none';
+    }
+
+    const descRow = document.getElementById('prev-desc-row');
+    if (description) { 
+      descRow.style.display = ''; document.getElementById('prev-description').textContent = description; 
+    } else { 
+      descRow.style.display = 'none'; 
+    }
+
+    const skillsRow = document.getElementById('prev-skills-row');
+    const skillsContainer = document.getElementById('prev-skills');
+    if (skills) {
+      skillsRow.style.display = '';
+      skillsContainer.innerHTML = skills.split(',').map(s => s.trim()).filter(Boolean).map(s =>
+        `<span style="background:#eef1f7;color:#2d3748;font-size:0.73rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:20px;">${s}</span>`
+      ).join('');
+    } else {
+      skillsRow.style.display = 'none';
+    }
+
+    const hasContent = title || company || location || minSalary || maxSalary || description || skills;
+    document.getElementById('prev-empty').style.display = hasContent ? 'none' : '';
+  }
+
+  document.getElementById('jobForm').addEventListener('input', updatePreview);
+  document.getElementById('jobForm').addEventListener('change', updatePreview);
+  updatePreview();
+</script>
+
 {% endblock content %}
