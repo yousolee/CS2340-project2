@@ -11,9 +11,7 @@
   .radius-slider { width: 100%; accent-color: #0f3460; }
   .locate-btn {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    color: #fff;
-    border: none;
-    transition: opacity 0.2s;
+    color: #fff; border: none; transition: opacity 0.2s;
   }
   .locate-btn:hover { opacity: 0.9; color: #fff; }
   .locate-btn:disabled { opacity: 0.5; color: #fff; }
@@ -24,12 +22,28 @@
   .job-popup-badges { margin-top: 6px; }
   .job-popup-badges .badge { font-size: 0.72rem; margin-right: 3px; }
   .job-popup-link { display: inline-block; margin-top: 8px; font-size: 0.82rem; font-weight: 500; }
+
+  .job-sidebar { max-height: 600px; overflow-y: auto; }
+  .job-sidebar::-webkit-scrollbar { width: 5px; }
+  .job-sidebar::-webkit-scrollbar-thumb { background: #c0c0c0; border-radius: 4px; }
+  .job-list-card {
+    border: 1px solid #e9ecef; border-radius: 8px; padding: 12px;
+    cursor: pointer; transition: all 0.15s ease;
+    background: #fff;
+  }
+  .job-list-card:hover { border-color: #0f3460; box-shadow: 0 2px 8px rgba(15,52,96,0.12); }
+  .job-list-card.active { border-color: #0f3460; background: #f0f4ff; }
+  .job-list-title { font-weight: 600; font-size: 0.88rem; color: #1a1a2e; }
+  .job-list-company { font-size: 0.78rem; color: #666; }
+  .job-list-meta { font-size: 0.73rem; color: #888; }
+  .job-list-distance { font-size: 0.75rem; font-weight: 600; color: #0f3460; }
+  .sort-select { font-size: 0.82rem; padding: 4px 8px; border-radius: 6px; }
 </style>
 {% endblock extra_head %}
 
 {% block content %}
 <div style="min-height: 100vh; background: linear-gradient(180deg, #e8f0fe 0%, #ffffff 40%);">
-  <div class="container py-4">
+  <div class="container-fluid px-4 py-4">
 
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
       <div>
@@ -55,13 +69,20 @@
         </div>
         <div class="col-12 col-md">
           <div id="radius-group" style="opacity: 0.45; pointer-events: none;">
-            <label class="form-label mb-1 small fw-semibold">
-              Commute Radius: <span id="radius-value" class="text-primary">10</span> miles
-            </label>
-            <input type="range" class="form-range radius-slider" id="radius-slider"
-                   min="1" max="50" value="10" step="1">
-            <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
-              <span>1 mi</span><span>25 mi</span><span>50 mi</span>
+            <div class="d-flex align-items-center mb-1">
+              <div class="form-check form-switch me-2 mb-0">
+                <input class="form-check-input" type="checkbox" id="radius-toggle" checked>
+                <label class="form-check-label small fw-semibold" for="radius-toggle">
+                  Commute Radius: <span id="radius-value" class="text-primary">10</span> miles
+                </label>
+              </div>
+            </div>
+            <div id="radius-slider-wrap">
+              <input type="range" class="form-range radius-slider" id="radius-slider"
+                     min="1" max="50" value="10" step="1">
+              <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                <span>1 mi</span><span>25 mi</span><span>50 mi</span>
+              </div>
             </div>
           </div>
         </div>
@@ -74,15 +95,39 @@
       <div id="location-status" class="text-muted small mt-2" style="display:none;"></div>
     </div>
 
-    <!-- Map Card -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header border-0 py-2 px-3 d-flex justify-content-between align-items-center"
-           style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
-        <span class="text-white small fw-semibold"><i class="fas fa-globe me-1"></i>Interactive Map</span>
-        <span class="text-white-50 small" id="geocode-status">Loading...</span>
+    <!-- Map + Sidebar Row -->
+    <div class="row g-3">
+      <!-- Map Column -->
+      <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header border-0 py-2 px-3 d-flex justify-content-between align-items-center"
+               style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+            <span class="text-white small fw-semibold"><i class="fas fa-globe me-1"></i>Interactive Map</span>
+            <span class="text-white-50 small" id="geocode-status">Loading...</span>
+          </div>
+          <div class="card-body p-0">
+            <div id="job-map"></div>
+          </div>
+        </div>
       </div>
-      <div class="card-body p-0">
-        <div id="job-map"></div>
+
+      <!-- Sidebar Job List Column -->
+      <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header border-0 py-2 px-3 d-flex justify-content-between align-items-center"
+               style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+            <span class="text-white small fw-semibold"><i class="fas fa-briefcase me-1"></i>Nearby Jobs</span>
+            <select class="form-select form-select-sm sort-select" id="sort-select" style="width: auto;">
+              <option value="name">A–Z</option>
+              <option value="distance" id="sort-distance-opt" style="display:none;">Distance ↑</option>
+            </select>
+          </div>
+          <div class="card-body p-2 job-sidebar" id="job-sidebar">
+            <div class="text-muted small text-center py-5" id="sidebar-placeholder">
+              <i class="fas fa-spinner fa-spin me-1"></i>Loading jobs...
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -106,6 +151,12 @@
   const radiusSlider = document.getElementById('radius-slider');
   const radiusValueEl = document.getElementById('radius-value');
   const locationStatus = document.getElementById('location-status');
+  const sidebar = document.getElementById('job-sidebar');
+  const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
+  const sortSelect = document.getElementById('sort-select');
+  const sortDistanceOpt = document.getElementById('sort-distance-opt');
+  const radiusToggle = document.getElementById('radius-toggle');
+  const radiusSliderWrap = document.getElementById('radius-slider-wrap');
 
   const map = L.map('job-map').setView([39.8, -98.5], 4);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -122,10 +173,11 @@
 
   if (totalJobs === 0) {
     statusEl.textContent = 'No jobs to display.';
+    sidebarPlaceholder.innerHTML = '<i class="fas fa-inbox me-1"></i>No jobs posted yet.';
     return;
   }
 
-  /* ---------- Geocode cache (shared with applicant map) ---------- */
+  /* ---------- Geocode cache ---------- */
   const CACHE_KEY = 'job_map_geocode_cache';
   function getCache() {
     try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
@@ -157,11 +209,13 @@
     const R = 3958.8;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 +
-              Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
-              Math.sin(dLng/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
+
+  function esc(str) { return str.replace(/</g, '&lt;'); }
 
   /* ---------- Build popup HTML ---------- */
   function popupHtml(job) {
@@ -173,17 +227,97 @@
     let visa = job.visa_sponsorship
       ? '<span class="badge bg-light text-dark border"><i class="fas fa-passport me-1 text-primary"></i>Visa</span>' : '';
     return '<div>' +
-      '<div class="job-popup-title">' + job.title.replace(/</g, '&lt;') + '</div>' +
-      '<div class="job-popup-company">' + job.company.replace(/</g, '&lt;') + '</div>' +
+      '<div class="job-popup-title">' + esc(job.title) + '</div>' +
+      '<div class="job-popup-company">' + esc(job.company) + '</div>' +
       '<div class="job-popup-badges">' +
-        '<span class="badge bg-light text-dark border"><i class="fas fa-map-marker-alt me-1 text-primary"></i>' + job.location.replace(/</g, '&lt;') + '</span>' +
+        '<span class="badge bg-light text-dark border"><i class="fas fa-map-marker-alt me-1 text-primary"></i>' + esc(job.location) + '</span>' +
         '<span class="badge bg-light text-dark border"><i class="fas fa-laptop-house me-1 text-primary"></i>' + job.mode + '</span>' +
         salary + visa +
       '</div>' +
-      (job._distance != null ? '<div class="small text-muted mt-1"><i class="fas fa-route me-1"></i>' + job._distance.toFixed(1) + ' miles away</div>' : '') +
+      (job._distance != null ? '<div class="small text-muted mt-1"><i class="fas fa-route me-1"></i>' + job._distance.toFixed(1) + ' mi away</div>' : '') +
       '<a class="job-popup-link text-primary" href="/jobs/' + job.id + '/">View Details &rarr;</a>' +
     '</div>';
   }
+
+  /* ---------- Sidebar list rendering ---------- */
+  function getVisibleJobs() {
+    const visible = [];
+    for (const m of allMarkers) {
+      if (markers.hasLayer(m)) visible.push(m);
+    }
+    return visible;
+  }
+
+  function renderSidebar() {
+    const visibleMarkers = getVisibleJobs();
+    const sortBy = sortSelect.value;
+
+    visibleMarkers.sort(function (a, b) {
+      const ja = a._jobData, jb = b._jobData;
+      if (sortBy === 'distance' && userLat != null) {
+        const da = ja._distance != null ? ja._distance : Infinity;
+        const db = jb._distance != null ? jb._distance : Infinity;
+        return da - db;
+      }
+      return ja.title.localeCompare(jb.title);
+    });
+
+    if (visibleMarkers.length === 0) {
+      sidebar.innerHTML = '<div class="text-muted small text-center py-5"><i class="fas fa-search me-1"></i>No jobs in this area. Try increasing the radius.</div>';
+      return;
+    }
+
+    let html = '';
+    for (const m of visibleMarkers) {
+      const j = m._jobData;
+      let distBadge = '';
+      if (j._distance != null) {
+        distBadge = '<span class="job-list-distance"><i class="fas fa-route me-1"></i>' + j._distance.toFixed(1) + ' mi</span>';
+      }
+      let salary = '';
+      if (j.min_salary && j.max_salary) {
+        salary = '<span class="job-list-meta"><i class="fas fa-dollar-sign me-1 text-success"></i>$' +
+          Number(j.min_salary).toLocaleString() + '–$' + Number(j.max_salary).toLocaleString() + '</span>';
+      }
+      html += '<div class="job-list-card mb-2" data-job-id="' + j.id + '">' +
+        '<div class="d-flex justify-content-between align-items-start">' +
+          '<div class="flex-grow-1 me-2">' +
+            '<div class="job-list-title">' + esc(j.title) + '</div>' +
+            '<div class="job-list-company">' + esc(j.company) + '</div>' +
+          '</div>' +
+          distBadge +
+        '</div>' +
+        '<div class="d-flex flex-wrap gap-1 mt-1 align-items-center">' +
+          '<span class="job-list-meta"><i class="fas fa-map-marker-alt me-1 text-primary"></i>' + esc(j.location) + '</span>' +
+          '<span class="job-list-meta ms-1"><i class="fas fa-laptop-house me-1 text-primary"></i>' + j.mode + '</span>' +
+          salary +
+        '</div>' +
+        '<a href="/jobs/' + j.id + '/" class="text-primary d-inline-block mt-1" style="font-size:0.78rem;font-weight:500;">View Details &rarr;</a>' +
+      '</div>';
+    }
+    sidebar.innerHTML = html;
+
+    sidebar.querySelectorAll('.job-list-card').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.tagName === 'A') return;
+        const jobId = parseInt(this.dataset.jobId, 10);
+        for (const m of allMarkers) {
+          if (m._jobData.id === jobId) {
+            const ll = m.getLatLng();
+            map.setView(ll, 14);
+            markers.zoomToShowLayer(m, function () {
+              m.openPopup();
+            });
+            sidebar.querySelectorAll('.job-list-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            break;
+          }
+        }
+      });
+    });
+  }
+
+  sortSelect.addEventListener('change', renderSidebar);
 
   /* ---------- Geocode all jobs and create markers ---------- */
   async function processJobs() {
@@ -219,42 +353,60 @@
     }
     statusEl.textContent = 'Showing ' + bounds.length + ' of ' + totalJobs + ' job(s)';
     visibleCountEl.textContent = bounds.length;
+    renderSidebar();
   }
 
-  /* ---------- Filter markers by radius ---------- */
-  function applyRadiusFilter() {
+  /* ---------- Recompute distances and refresh map/sidebar ---------- */
+  function refreshWithLocation() {
     if (userLat == null) return;
+    const radiusEnabled = radiusToggle.checked;
     const radiusMiles = parseInt(radiusSlider.value, 10);
-    const radiusMeters = radiusMiles * 1609.34;
 
-    if (radiusCircle) map.removeLayer(radiusCircle);
-    radiusCircle = L.circle([userLat, userLng], {
-      radius: radiusMeters,
-      color: '#0f3460',
-      fillColor: '#0f3460',
-      fillOpacity: 0.08,
-      weight: 2,
-      dashArray: '6 4',
-    }).addTo(map);
+    if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
+
+    for (const m of allMarkers) {
+      const job = m._jobData;
+      job._distance = haversineMiles(userLat, userLng, job._lat, job._lng);
+      m.setPopupContent(popupHtml(job));
+    }
 
     markers.clearLayers();
     let visible = 0;
-    for (const m of allMarkers) {
-      const job = m._jobData;
-      const dist = haversineMiles(userLat, userLng, job._lat, job._lng);
-      job._distance = dist;
-      m.setPopupContent(popupHtml(job));
-      if (dist <= radiusMiles) {
+
+    if (radiusEnabled) {
+      const radiusMeters = radiusMiles * 1609.34;
+      radiusCircle = L.circle([userLat, userLng], {
+        radius: radiusMeters,
+        color: '#0f3460',
+        fillColor: '#0f3460',
+        fillOpacity: 0.08,
+        weight: 2,
+        dashArray: '6 4',
+      }).addTo(map);
+
+      for (const m of allMarkers) {
+        if (m._jobData._distance <= radiusMiles) {
+          markers.addLayer(m);
+          visible++;
+        }
+      }
+      visibleCountEl.textContent = visible;
+      statusEl.textContent = visible + ' job(s) within ' + radiusMiles + ' miles';
+      map.fitBounds(radiusCircle.getBounds(), { padding: [40, 40] });
+    } else {
+      for (const m of allMarkers) {
         markers.addLayer(m);
         visible++;
       }
+      visibleCountEl.textContent = visible;
+      statusEl.textContent = 'Showing all ' + visible + ' job(s) sorted by distance';
+      if (allMarkers.length > 0) {
+        const bounds = allMarkers.map(m => m.getLatLng());
+        map.fitBounds(bounds, { padding: [40, 40] });
+      }
     }
 
-    visibleCountEl.textContent = visible;
-    statusEl.textContent = visible + ' job(s) within ' + radiusMiles + ' miles';
-
-    const circleBounds = radiusCircle.getBounds();
-    map.fitBounds(circleBounds, { padding: [40, 40] });
+    renderSidebar();
   }
 
   /* ---------- "Use My Location" ---------- */
@@ -289,11 +441,13 @@
         radiusGroup.style.opacity = '1';
         radiusGroup.style.pointerEvents = 'auto';
         clearCol.style.display = 'block';
+        sortDistanceOpt.style.display = '';
+        sortSelect.value = 'distance';
         locateBtn.disabled = false;
         locateBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Update Location';
         locationStatus.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>Location acquired. Adjust the radius slider to filter jobs.</span>';
 
-        applyRadiusFilter();
+        refreshWithLocation();
       },
       function (err) {
         locateBtn.disabled = false;
@@ -310,7 +464,14 @@
   /* ---------- Radius slider ---------- */
   radiusSlider.addEventListener('input', function () {
     radiusValueEl.textContent = this.value;
-    applyRadiusFilter();
+    refreshWithLocation();
+  });
+
+  /* ---------- Radius toggle ---------- */
+  radiusToggle.addEventListener('change', function () {
+    radiusSliderWrap.style.opacity = this.checked ? '1' : '0.4';
+    radiusSliderWrap.style.pointerEvents = this.checked ? 'auto' : 'none';
+    refreshWithLocation();
   });
 
   /* ---------- Clear location ---------- */
@@ -322,9 +483,14 @@
 
     radiusGroup.style.opacity = '0.45';
     radiusGroup.style.pointerEvents = 'none';
+    radiusToggle.checked = true;
+    radiusSliderWrap.style.opacity = '1';
+    radiusSliderWrap.style.pointerEvents = 'auto';
     clearCol.style.display = 'none';
     locationStatus.style.display = 'none';
     locateBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Location';
+    sortDistanceOpt.style.display = 'none';
+    sortSelect.value = 'name';
 
     markers.clearLayers();
     for (const m of allMarkers) {
@@ -339,6 +505,7 @@
       const bounds = allMarkers.map(m => m.getLatLng());
       map.fitBounds(bounds, { padding: [40, 40] });
     }
+    renderSidebar();
   });
 
   processJobs();
