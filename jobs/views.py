@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.http import HttpResponseForbidden
@@ -155,3 +157,27 @@ def my_postings(request):
         'can_post_jobs': True,
     }
     return render(request, 'jobs/my_postings.html', {'template_data': template_data})
+
+
+def job_map(request):
+    jobs = Job.objects.all()
+    job_data = []
+    for job in jobs:
+        job_data.append({
+            'id': job.id,
+            'title': job.title,
+            'company': job.company,
+            'location': job.location,
+            'mode': job.get_mode_display(),
+            'min_salary': str(job.min_salary) if job.min_salary else None,
+            'max_salary': str(job.max_salary) if job.max_salary else None,
+            'visa_sponsorship': job.visa_sponsorship,
+        })
+
+    template_data = {
+        'title': 'Job Map - JobsFinder',
+        'job_data_json': json.dumps(job_data),
+        'job_count': len(job_data),
+        'can_post_jobs': get_recruiter(request.user) is not None,
+    }
+    return render(request, 'jobs/job_map.html', {'template_data': template_data})

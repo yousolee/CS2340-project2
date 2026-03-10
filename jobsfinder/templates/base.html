@@ -47,6 +47,7 @@
                 <li><span class="dropdown-item-text text-muted small">{{ user.username }}</span></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" href="{% url 'jobs.list' %}"><i class="fas fa-search me-2"></i>Browse Jobs</a></li>
+                <li><a class="dropdown-item" href="{% url 'jobs.map' %}"><i class="fas fa-map-marked-alt me-2"></i>Job Map</a></li>
                 <li><a class="dropdown-item" href="{% url 'accounts.dashboard' %}"><i class="fas fa-th-large me-2"></i>Dashboard</a></li>
                 {% if is_admin %}
                   <li><a class="dropdown-item text-warning" href="{% url 'accounts.admin_dashboard' %}"><i class="fas fa-shield-alt me-2"></i>Admin</a></li>

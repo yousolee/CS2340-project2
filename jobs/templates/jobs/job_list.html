@@ -13,6 +13,9 @@
         {% if template_data.can_post_jobs %}
           <a class="btn text-white me-2" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);" href="{% url 'jobs.create' %}">Post a Job</a>
         {% endif %}
+          <a class="btn text-white me-2" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);" href="{% url 'jobs.map' %}">
+            <i class="fas fa-map-marked-alt me-1"></i>Map View
+          </a>
           <button type="button" class="btn text-white" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);" data-bs-toggle="modal" data-bs-target="#filterModal">
             <i class="fas fa-filter me-2"></i>Filter / Search
           </button>    

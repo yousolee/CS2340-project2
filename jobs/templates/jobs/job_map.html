@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<style>
+  #job-map { height: 600px; width: 100%; border-radius: 0 0 8px 8px; }
+  .radius-control { background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .radius-slider { width: 100%; accent-color: #0f3460; }
+  .locate-btn {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #fff;
+    border: none;
+    transition: opacity 0.2s;
+  }
+  .locate-btn:hover { opacity: 0.9; color: #fff; }
+  .locate-btn:disabled { opacity: 0.5; color: #fff; }
+  .map-stat { font-size: 0.85rem; }
+  .leaflet-popup-content { min-width: 200px; }
+  .job-popup-title { font-weight: 600; font-size: 0.95rem; color: #1a1a2e; }
+  .job-popup-company { color: #555; font-size: 0.85rem; }
+  .job-popup-badges { margin-top: 6px; }
+  .job-popup-badges .badge { font-size: 0.72rem; margin-right: 3px; }
+  .job-popup-link { display: inline-block; margin-top: 8px; font-size: 0.82rem; font-weight: 500; }
+</style>
+{% endblock extra_head %}
+
+{% block content %}
+<div style="min-height: 100vh; background: linear-gradient(180deg, #e8f0fe 0%, #ffffff 40%);">
+  <div class="container py-4">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <h3 class="mb-1"><i class="fas fa-map-marked-alt me-2 text-primary"></i>Job Map</h3>
+        <div class="text-muted map-stat">
+          <span id="visible-count">{{ template_data.job_count }}</span> of {{ template_data.job_count }} job{{ template_data.job_count|pluralize }} shown
+        </div>
+      </div>
+      <div>
+        <a class="btn text-white me-2" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);" href="{% url 'jobs.list' %}">
+          <i class="fas fa-list me-1"></i>List View
+        </a>
+      </div>
+    </div>
+
+    <!-- Radius / Location Controls -->
+    <div class="radius-control p-3 mb-3">
+      <div class="row align-items-center g-3">
+        <div class="col-12 col-md-auto">
+          <button class="btn locate-btn" id="locate-btn" type="button">
+            <i class="fas fa-crosshairs me-1"></i>Use My Location
+          </button>
+        </div>
+        <div class="col-12 col-md">
+          <div id="radius-group" style="opacity: 0.45; pointer-events: none;">
+            <label class="form-label mb-1 small fw-semibold">
+              Commute Radius: <span id="radius-value" class="text-primary">10</span> miles
+            </label>
+            <input type="range" class="form-range radius-slider" id="radius-slider"
+                   min="1" max="50" value="10" step="1">
+            <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+              <span>1 mi</span><span>25 mi</span><span>50 mi</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-auto" id="clear-col" style="display:none;">
+          <button class="btn btn-outline-secondary btn-sm" id="clear-location-btn" type="button">
+            <i class="fas fa-times me-1"></i>Clear Location
+          </button>
+        </div>
+      </div>
+      <div id="location-status" class="text-muted small mt-2" style="display:none;"></div>
+    </div>
+
+    <!-- Map Card -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header border-0 py-2 px-3 d-flex justify-content-between align-items-center"
+           style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);">
+        <span class="text-white small fw-semibold"><i class="fas fa-globe me-1"></i>Interactive Map</span>
+        <span class="text-white-50 small" id="geocode-status">Loading...</span>
+      </div>
+      <div class="card-body p-0">
+        <div id="job-map"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+(function () {
+  const jobData = {{ template_data.job_data_json|safe }};
+  const totalJobs = jobData.length;
+  const statusEl = document.getElementById('geocode-status');
+  const visibleCountEl = document.getElementById('visible-count');
+  const locateBtn = document.getElementById('locate-btn');
+  const clearBtn = document.getElementById('clear-location-btn');
+  const clearCol = document.getElementById('clear-col');
+  const radiusGroup = document.getElementById('radius-group');
+  const radiusSlider = document.getElementById('radius-slider');
+  const radiusValueEl = document.getElementById('radius-value');
+  const locationStatus = document.getElementById('location-status');
+
+  const map = L.map('job-map').setView([39.8, -98.5], 4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 18,
+  }).addTo(map);
+
+  const markers = L.markerClusterGroup();
+  let allMarkers = [];
+  let userLat = null;
+  let userLng = null;
+  let radiusCircle = null;
+  let userMarker = null;
+
+  if (totalJobs === 0) {
+    statusEl.textContent = 'No jobs to display.';
+    return;
+  }
+
+  /* ---------- Geocode cache (shared with applicant map) ---------- */
+  const CACHE_KEY = 'job_map_geocode_cache';
+  function getCache() {
+    try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
+    catch { return {}; }
+  }
+  function setCache(c) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); }
+    catch {}
+  }
+
+  async function geocode(query) {
+    const cache = getCache();
+    const key = query.trim().toLowerCase();
+    if (cache[key]) return cache[key];
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(query);
+    const resp = await fetch(url, { headers: { 'User-Agent': 'JobsFinder-JobMap/1.0' } });
+    const data = await resp.json();
+    if (data && data.length > 0) {
+      const result = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      cache[key] = result;
+      setCache(cache);
+      return result;
+    }
+    return null;
+  }
+
+  /* ---------- Haversine distance (miles) ---------- */
+  function haversineMiles(lat1, lng1, lat2, lng2) {
+    const R = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+              Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  /* ---------- Build popup HTML ---------- */
+  function popupHtml(job) {
+    let salary = '';
+    if (job.min_salary && job.max_salary) {
+      salary = '<span class="badge bg-light text-dark border"><i class="fas fa-dollar-sign me-1 text-success"></i>' +
+               '$' + Number(job.min_salary).toLocaleString() + ' – $' + Number(job.max_salary).toLocaleString() + '</span>';
+    }
+    let visa = job.visa_sponsorship
+      ? '<span class="badge bg-light text-dark border"><i class="fas fa-passport me-1 text-primary"></i>Visa</span>' : '';
+    return '<div>' +
+      '<div class="job-popup-title">' + job.title.replace(/</g, '&lt;') + '</div>' +
+      '<div class="job-popup-company">' + job.company.replace(/</g, '&lt;') + '</div>' +
+      '<div class="job-popup-badges">' +
+        '<span class="badge bg-light text-dark border"><i class="fas fa-map-marker-alt me-1 text-primary"></i>' + job.location.replace(/</g, '&lt;') + '</span>' +
+        '<span class="badge bg-light text-dark border"><i class="fas fa-laptop-house me-1 text-primary"></i>' + job.mode + '</span>' +
+        salary + visa +
+      '</div>' +
+      (job._distance != null ? '<div class="small text-muted mt-1"><i class="fas fa-route me-1"></i>' + job._distance.toFixed(1) + ' miles away</div>' : '') +
+      '<a class="job-popup-link text-primary" href="/jobs/' + job.id + '/">View Details &rarr;</a>' +
+    '</div>';
+  }
+
+  /* ---------- Geocode all jobs and create markers ---------- */
+  async function processJobs() {
+    let completed = 0;
+    const bounds = [];
+
+    for (const job of jobData) {
+      statusEl.textContent = 'Geocoding ' + (completed + 1) + ' of ' + totalJobs + '...';
+      try {
+        const coords = await geocode(job.location);
+        if (coords) {
+          job._lat = coords.lat;
+          job._lng = coords.lng;
+          const marker = L.marker([coords.lat, coords.lng]);
+          marker.bindPopup(popupHtml(job));
+          marker._jobData = job;
+          allMarkers.push(marker);
+          markers.addLayer(marker);
+          bounds.push([coords.lat, coords.lng]);
+        }
+      } catch (e) {
+        console.warn('Geocoding failed:', job.location, e);
+      }
+      completed++;
+      if (completed < totalJobs) {
+        await new Promise(r => setTimeout(r, 1050));
+      }
+    }
+
+    map.addLayer(markers);
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+    statusEl.textContent = 'Showing ' + bounds.length + ' of ' + totalJobs + ' job(s)';
+    visibleCountEl.textContent = bounds.length;
+  }
+
+  /* ---------- Filter markers by radius ---------- */
+  function applyRadiusFilter() {
+    if (userLat == null) return;
+    const radiusMiles = parseInt(radiusSlider.value, 10);
+    const radiusMeters = radiusMiles * 1609.34;
+
+    if (radiusCircle) map.removeLayer(radiusCircle);
+    radiusCircle = L.circle([userLat, userLng], {
+      radius: radiusMeters,
+      color: '#0f3460',
+      fillColor: '#0f3460',
+      fillOpacity: 0.08,
+      weight: 2,
+      dashArray: '6 4',
+    }).addTo(map);
+
+    markers.clearLayers();
+    let visible = 0;
+    for (const m of allMarkers) {
+      const job = m._jobData;
+      const dist = haversineMiles(userLat, userLng, job._lat, job._lng);
+      job._distance = dist;
+      m.setPopupContent(popupHtml(job));
+      if (dist <= radiusMiles) {
+        markers.addLayer(m);
+        visible++;
+      }
+    }
+
+    visibleCountEl.textContent = visible;
+    statusEl.textContent = visible + ' job(s) within ' + radiusMiles + ' miles';
+
+    const circleBounds = radiusCircle.getBounds();
+    map.fitBounds(circleBounds, { padding: [40, 40] });
+  }
+
+  /* ---------- "Use My Location" ---------- */
+  locateBtn.addEventListener('click', function () {
+    if (!navigator.geolocation) {
+      locationStatus.style.display = 'block';
+      locationStatus.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Geolocation is not supported by your browser.</span>';
+      return;
+    }
+
+    locateBtn.disabled = true;
+    locateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Locating...';
+    locationStatus.style.display = 'block';
+    locationStatus.textContent = 'Requesting your location...';
+
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.marker([userLat, userLng], {
+          icon: L.divIcon({
+            html: '<div style="background:#0f3460;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 6px rgba(0,0,0,0.3);"></div>',
+            className: '',
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+          }),
+          zIndexOffset: 1000,
+        }).addTo(map).bindPopup('<strong>Your Location</strong>');
+
+        radiusGroup.style.opacity = '1';
+        radiusGroup.style.pointerEvents = 'auto';
+        clearCol.style.display = 'block';
+        locateBtn.disabled = false;
+        locateBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Update Location';
+        locationStatus.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>Location acquired. Adjust the radius slider to filter jobs.</span>';
+
+        applyRadiusFilter();
+      },
+      function (err) {
+        locateBtn.disabled = false;
+        locateBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Location';
+        locationStatus.style.display = 'block';
+        let msg = 'Unable to retrieve your location.';
+        if (err.code === 1) msg = 'Location access denied. Please allow location access in your browser settings.';
+        locationStatus.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>' + msg + '</span>';
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+
+  /* ---------- Radius slider ---------- */
+  radiusSlider.addEventListener('input', function () {
+    radiusValueEl.textContent = this.value;
+    applyRadiusFilter();
+  });
+
+  /* ---------- Clear location ---------- */
+  clearBtn.addEventListener('click', function () {
+    userLat = null;
+    userLng = null;
+    if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
+    if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
+
+    radiusGroup.style.opacity = '0.45';
+    radiusGroup.style.pointerEvents = 'none';
+    clearCol.style.display = 'none';
+    locationStatus.style.display = 'none';
+    locateBtn.innerHTML = '<i class="fas fa-crosshairs me-1"></i>Use My Location';
+
+    markers.clearLayers();
+    for (const m of allMarkers) {
+      m._jobData._distance = null;
+      m.setPopupContent(popupHtml(m._jobData));
+      markers.addLayer(m);
+    }
+    visibleCountEl.textContent = allMarkers.length;
+    statusEl.textContent = 'Showing ' + allMarkers.length + ' of ' + totalJobs + ' job(s)';
+
+    if (allMarkers.length > 0) {
+      const bounds = allMarkers.map(m => m.getLatLng());
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  });
+
+  processJobs();
+})();
+</script>
+{% endblock extra_js %}
