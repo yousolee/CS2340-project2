@@ -42,7 +42,19 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 def embedding_similarity_score(profile_vector: list[float], job_vector: list[float]) -> float:
     cosine = cosine_similarity(profile_vector, job_vector)
-    return clamp((cosine + 1.0) / 2.0)
+    return piecewise_cosine_map(cosine)
+
+
+def piecewise_cosine_map(cosine: float) -> float:
+    """Map cosine similarity in [-1, 1] to [0, 1] with a breakpoint at 0:
+    - values <= 0 map linearly from [-1, 0] -> [0, 0.25]
+    - values >  0 map linearly from (0, 1] -> (0.25, 1]
+    """
+    if cosine <= 0.0:
+        # (cosine + 1) ranges 0..1 -> scale to 0..0.25
+        return clamp(0.25 * (cosine + 1.0))
+    # cosine in (0,1] -> scale to 0.25..1: 0.75*cosine + 0.25
+    return clamp(0.75 * cosine + 0.25)
 
 
 def mode_location_structured_score(profile_location: str, job_location: str, job_mode: str) -> float:
@@ -78,14 +90,14 @@ def recency_boost(posted_date: datetime | None, now: datetime) -> float:
 
 def compute_fit_score(features: PairFeatures) -> float:
     raw = (
-        0.60 * features.exp_desc_embedding
-        + 0.20 * features.title_embedding
-        + 0.20 * features.skills_embedding
+        features.exp_desc_embedding
+        + features.title_embedding
+        + features.skills_embedding
         #+ 0.15 * features.summary_desc_embedding
         #+ 0.10 * features.mode_location_structured
         #+ 0.05 * features.visa_structured
-    )
-    return clamp(raw)
+    ) / 3
+    return raw
 
 
 def compute_ranking_score(fit_score_raw: float, recency_value: float) -> float:

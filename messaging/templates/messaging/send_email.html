@@ -5,43 +5,72 @@
     Email {{ job_seeker.get_full_name|default:job_seeker.username }}
   </h4>
   <p class="text-muted small mb-4">
-    This will be sent directly to their email inbox.
+    Review and edit the draft here. Your mail app will only open when you click Send Email.
   </p>
 
   {% if no_email %}
     <div class="alert alert-warning">
       This user hasn't added an email address to their account yet.
     </div>
-  {% elif sent %}
-    <div class="alert alert-success">
-      Your email was sent successfully!
-    </div>
-    <a href="{% url 'profiles.public' job_seeker.username %}" class="btn btn-outline-secondary btn-sm">
-      Back to profile
-    </a>
   {% else %}
     <form method="POST">
       {% csrf_token %}
+      <div class="alert alert-warning small">
+        If clicking "Send Email" triggers an account/password popup, that prompt is coming from your default mail app.
+        Sign in to that app, switch your default mail app, or use Gmail/Outlook Web below to bypass the local client.
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">From</label>
+        <input
+          type="text"
+          class="form-control"
+          value="{{ sender_email|default:'No account email on file' }}"
+          readonly
+        >
+        <div class="form-text">
+          Your mail client controls the actual sender address. Your account email is included in the draft signature.
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">To</label>
+        <input type="text" class="form-control" value="{{ job_seeker.email }}" readonly>
+      </div>
       <div class="mb-3">
         <label class="form-label fw-semibold small">Subject</label>
         <input type="text" name="subject" class="form-control" required
-               placeholder="e.g. Exciting opportunity at Acme Corp">
+               value="{{ subject }}">
       </div>
       <div class="mb-4">
         <label class="form-label fw-semibold small">Message</label>
         <textarea name="body" class="form-control" rows="8" required
-                  placeholder="Write your message here..."></textarea>
+        >{{ body }}</textarea>
       </div>
       <div class="d-flex gap-2">
         <button type="submit" class="btn text-white fw-semibold"
                 style="background: linear-gradient(135deg, #1a1a2e, #0f3460);">
-          <i class="fas fa-paper-plane me-1"></i>Send Email
+          <i class="fas fa-pen-to-square me-1"></i>Update Draft
         </button>
+        <a href="{{ mailto_url }}" class="btn btn-outline-primary fw-semibold">
+          <i class="fas fa-paper-plane me-1"></i>Send Email
+        </a>
         <a href="{% url 'profiles.public' job_seeker.username %}" class="btn btn-outline-secondary">
           Cancel
         </a>
       </div>
     </form>
+    <div class="mt-3">
+      <p class="text-muted small mb-2">
+        Clicking "Send Email" opens your mail app with this draft so you can send it there.
+      </p>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ gmail_url }}" target="_blank" rel="noopener" class="btn btn-outline-danger btn-sm">
+          <i class="fab fa-google me-1"></i>Open in Gmail
+        </a>
+        <a href="{{ outlook_url }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+          <i class="fab fa-microsoft me-1"></i>Open in Outlook Web
+        </a>
+      </div>
+    </div>
   {% endif %}
 </div>
 {% endblock content %}

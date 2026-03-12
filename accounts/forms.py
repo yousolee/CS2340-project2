@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.forms.utils import ErrorList
 from django.utils.safestring import mark_safe
@@ -112,6 +113,18 @@ class SavedSearchForm(forms.Form):
     location = forms.CharField(required=False, widget=forms.HiddenInput())
     company = forms.CharField(required=False, widget=forms.HiddenInput())
     job_title = forms.CharField(required=False, widget=forms.HiddenInput())
+
+
+class RecruiterAccountForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'you@company.com'}),
+        }
+
 
 class RecruiterProfileForm(forms.ModelForm):
     class Meta:

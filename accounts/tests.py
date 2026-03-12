@@ -501,6 +501,37 @@ class ApplicantMapTests(TestCase):
         self.assertNotIn('Remote', locations)
         self.assertNotIn('', locations)
 
+    def test_dashboard_includes_applicant_map_data(self):
+        response = self.client.get(reverse('accounts.dashboard'))
+        self.assertEqual(response.status_code, 200)
+
+        template_data = response.context['template_data']
+        self.assertEqual(template_data['total_applicants'], 1)
+        self.assertEqual(
+            template_data['location_data'],
+            [{'location': 'Atlanta, GA', 'count': 1}],
+        )
+        self.assertContains(response, 'Applicant Map')
+
+    def test_dashboard_applicant_map_with_job_filter(self):
+        response = self.client.get(
+            reverse('accounts.dashboard'),
+            {
+                'section': 'candidates',
+                'tab': 'applicant-map-tab',
+                'job_id': self.job2.id,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        template_data = response.context['template_data']
+        self.assertEqual(template_data['selected_job'].id, self.job2.id)
+        self.assertEqual(
+            template_data['location_data'],
+            [{'location': 'Atlanta, GA', 'count': 1}],
+        )
+        self.assertContains(response, 'Showing applicants for')
+
     def test_applicant_map_requires_recruiter_role(self):
         self.client.logout()
         seeker_only = User.objects.create_user(
@@ -509,3 +540,79 @@ class ApplicantMapTests(TestCase):
         self.client.login(username='plain_seeker', password='ComplexPass123!')
         response = self.client.get(reverse('accounts.applicant_map'))
         self.assertNotEqual(response.status_code, 200)
+
+
+class RecruiterProfileEditTests(TestCase):
+    def setUp(self):
+        self.recruiter_user = User.objects.create_user(
+            username='edit_recruiter',
+            password='ComplexPass123!',
+            first_name='Old',
+            last_name='Name',
+            email='old@example.com',
+        )
+        self.recruiter = Recruiter.objects.create(
+            user=self.recruiter_user,
+            company_name='Old Company',
+        )
+        self.job_seeker = User.objects.create_user(
+            username='just_seeker',
+            password='ComplexPass123!',
+        )
+
+    def test_recruiter_profile_root_redirects_to_basic_section(self):
+        self.client.login(username='edit_recruiter', password='ComplexPass123!')
+
+        response = self.client.get(reverse('accounts.edit_recruiter_profile'))
+
+        self.assertRedirects(
+            response,
+            reverse('accounts.edit_recruiter_profile_section', kwargs={'section': 'basic'}),
+        )
+
+    def test_non_recruiter_cannot_access_recruiter_profile_editor(self):
+        self.client.login(username='just_seeker', password='ComplexPass123!')
+
+        response = self.client.get(reverse('accounts.edit_recruiter_profile'))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn(b'Only recruiters can edit a recruiter profile.', response.content)
+
+    def test_basic_section_updates_recruiter_user_fields(self):
+        self.client.login(username='edit_recruiter', password='ComplexPass123!')
+
+        response = self.client.post(
+            reverse('accounts.edit_recruiter_profile_section', kwargs={'section': 'basic'}),
+            {
+                'first_name': 'Taylor',
+                'last_name': 'Recruiter',
+                'email': 'taylor@acme.com',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('accounts.edit_recruiter_profile_section', kwargs={'section': 'basic'}),
+        )
+        self.recruiter_user.refresh_from_db()
+        self.assertEqual(self.recruiter_user.first_name, 'Taylor')
+        self.assertEqual(self.recruiter_user.last_name, 'Recruiter')
+        self.assertEqual(self.recruiter_user.email, 'taylor@acme.com')
+
+    def test_company_section_updates_recruiter_company_name(self):
+        self.client.login(username='edit_recruiter', password='ComplexPass123!')
+
+        response = self.client.post(
+            reverse('accounts.edit_recruiter_profile_section', kwargs={'section': 'company'}),
+            {
+                'company_name': 'Acme Talent',
+                'logo-clear': '',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('accounts.edit_recruiter_profile_section', kwargs={'section': 'company'}),
+        )
+        self.recruiter.refresh_from_db()
+        self.assertEqual(self.recruiter.company_name, 'Acme Talent')

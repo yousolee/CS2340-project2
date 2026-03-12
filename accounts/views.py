@@ -19,7 +19,14 @@ from jobs.recommendations.service import recommend_jobs_for_profile, recommend_p
 from profiles.models import Profile
 
 from .models import Recruiter, SavedSearch
-from .forms import CandidateSearchForm, CustomErrorList, CustomUserCreationForm, SavedSearchForm, RecruiterProfileForm
+from .forms import (
+    CandidateSearchForm,
+    CustomErrorList,
+    CustomUserCreationForm,
+    RecruiterAccountForm,
+    RecruiterProfileForm,
+    SavedSearchForm,
+)
 from .utils import (
     filter_candidate_profiles,
     get_user_role,
@@ -28,6 +35,11 @@ from .utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+RECRUITER_PROFILE_SECTION_LABELS = {
+    'basic': 'Basic Info',
+    'company': 'Company Profile',
+}
 
 
 def _role_display_label(user):
@@ -55,6 +67,45 @@ def _notification_text(notification):
         match_count = (notification.data or {}).get("match_count", 0)
         return f'{match_count} new candidate(s) match your saved search "{search_name}".'
     return notification.verb.replace("_", " ").capitalize()
+
+
+def _build_applicant_map_context(recruiter, selected_job_id=''):
+    recruiter_jobs = Job.objects.filter(posted_by=recruiter).order_by('-posted_date')
+    selected_job = None
+    applications = Application.objects.filter(job__posted_by=recruiter)
+
+    if selected_job_id:
+        selected_job = recruiter_jobs.filter(pk=selected_job_id).first()
+        if selected_job is not None:
+            applications = applications.filter(job=selected_job)
+
+    location_counts = (
+        applications
+        .exclude(applicant__profile__location__isnull=True)
+        .exclude(applicant__profile__location='')
+        .values('applicant__profile__location')
+        .annotate(count=Count('applicant', distinct=True))
+        .order_by('-count', 'applicant__profile__location')
+    )
+
+    location_data = []
+    for entry in location_counts:
+        location = entry['applicant__profile__location'].strip()
+        if location.lower() == 'remote':
+            continue
+        location_data.append({
+            'location': location,
+            'count': entry['count'],
+        })
+
+    return {
+        'location_data': location_data,
+        'location_data_json': json.dumps(location_data),
+        'total_applicants': sum(entry['count'] for entry in location_data),
+        'recruiter_jobs': recruiter_jobs,
+        'selected_job': selected_job,
+        'selected_job_id': selected_job_id,
+    }
 
 
 def signup(request):
@@ -117,6 +168,7 @@ def dashboard(request):
     if role == 'recruiter':
         recruiter = request.user.recruiter_profile
         posted_jobs = Job.objects.filter(posted_by=recruiter)
+        selected_job_id = (request.GET.get('job_id') or '').strip()
         recent_applications = Application.objects.filter(
             job__posted_by=recruiter
         ).select_related("job", "applicant")[:8]
@@ -136,8 +188,7 @@ def dashboard(request):
         status_labels = [label for _, label in statuses]
         status_counts = [status_map.get(value, 0) for value, _ in statuses]
         saved_searches = SavedSearch.objects.filter(recruiter=recruiter)
-        recruiter_jobs = Job.objects.filter(posted_by=recruiter).order_by('-posted_date')
-
+        applicant_map_data = _build_applicant_map_context(recruiter, selected_job_id)
 
         template_data = {
             'title': 'Recruiter Dashboard',
@@ -147,7 +198,6 @@ def dashboard(request):
             'status_labels': status_labels,
             'status_counts': status_counts,
             'saved_searches': saved_searches,
-            'recruiter_jobs': recruiter_jobs,
             'notifications': [
                 {
                     'id': notification.id,
@@ -162,6 +212,7 @@ def dashboard(request):
                 }
                 for notification in unread_notifications
             ],
+            **applicant_map_data,
         }
         return render(request, 'accounts/recruiter_dashboard.html', {'template_data': template_data})
 
@@ -363,43 +414,12 @@ def delete_saved_search(request, search_id):
 @user_passes_test(is_recruiter_user)
 def applicant_map(request):
     recruiter = request.user.recruiter_profile
-    recruiter_jobs = Job.objects.filter(posted_by=recruiter).order_by('-posted_date')
     selected_job_id = (request.GET.get('job_id') or '').strip()
-    selected_job = None
-
-    apps = Application.objects.filter(job__posted_by=recruiter)
-
-    if selected_job_id:
-        selected_job = recruiter_jobs.filter(pk=selected_job_id).first()
-        if selected_job:
-            apps = apps.filter(job=selected_job)
-
-    location_counts = (
-        apps
-        .exclude(applicant__profile__location='')
-        .values('applicant__profile__location')
-        .annotate(count=Count('id'))
-        .order_by('-count')
-    )
-
-    location_data = []
-    for entry in location_counts:
-        loc = entry['applicant__profile__location']
-        if loc.strip().lower() == 'remote':
-            continue
-        location_data.append({
-            'location': loc,
-            'count': entry['count'],
-        })
+    applicant_map_data = _build_applicant_map_context(recruiter, selected_job_id)
 
     template_data = {
         'title': 'Applicant Map',
-        'location_data': location_data,
-        'location_data_json': json.dumps(location_data),
-        'total_applicants': sum(d['count'] for d in location_data),
-        'recruiter_jobs': recruiter_jobs,
-        'selected_job': selected_job,
-        'selected_job_id': selected_job_id,
+        **applicant_map_data,
     }
     return render(request, 'accounts/applicant_map.html', {'template_data': template_data})
 
@@ -577,10 +597,38 @@ def admin_export_applications(request):
 
     return response
 
+@login_required
 def edit_recruiter_profile(request):
+    if not is_recruiter_user(request.user):
+        return HttpResponseForbidden('Only recruiters can edit a recruiter profile.')
+    return redirect('accounts.edit_recruiter_profile_section', section='basic')
+
+
+@login_required
+def edit_recruiter_profile_section(request, section):
+    if not is_recruiter_user(request.user):
+        return HttpResponseForbidden('Only recruiters can edit a recruiter profile.')
+    if section not in RECRUITER_PROFILE_SECTION_LABELS:
+        return HttpResponseForbidden('Unknown recruiter profile section.')
+
     recruiter = request.user.recruiter_profile
-    form = RecruiterProfileForm(request.POST or None, request.FILES or None, instance=recruiter)
-    if form.is_valid():
+    template_data = {
+        'title': f'Edit {RECRUITER_PROFILE_SECTION_LABELS[section]}',
+        'section': section,
+        'section_label': RECRUITER_PROFILE_SECTION_LABELS[section],
+        'section_labels': RECRUITER_PROFILE_SECTION_LABELS,
+        'recruiter': recruiter,
+    }
+
+    if section == 'basic':
+        form = RecruiterAccountForm(request.POST or None, instance=request.user)
+    else:
+        form = RecruiterProfileForm(request.POST or None, request.FILES or None, instance=recruiter)
+
+    if request.method == 'POST' and form.is_valid():
         form.save()
-        return redirect('accounts.dashboard')
-    return render(request, 'accounts/edit_recruiter_profile.html', {'form': form})
+        messages.success(request, f'{RECRUITER_PROFILE_SECTION_LABELS[section]} updated.')
+        return redirect('accounts.edit_recruiter_profile_section', section=section)
+
+    template_data['form'] = form
+    return render(request, 'accounts/edit_recruiter_profile.html', {'template_data': template_data})

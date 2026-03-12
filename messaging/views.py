@@ -1,8 +1,9 @@
 import logging
+from urllib.parse import quote, urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.mail import EmailMessage, send_mail
+from django.core.mail import EmailMessage
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -35,6 +36,50 @@ def _notify_recipient(sender, recipient, body, conversation_id, request):
         email.send()
     except Exception:
         logger.exception('Failed to send message notification to %s', recipient.email)
+
+
+def _default_email_subject(sender_name):
+    return f'Opportunity to connect with {sender_name}'
+
+
+def _default_email_body(sender, recipient):
+    sender_name = sender.get_full_name() or sender.username
+    recipient_name = recipient.get_full_name() or recipient.username
+    sender_email = sender.email or '[Add your email address in your profile before sending.]'
+    return (
+        f'Hi {recipient_name},\n\n'
+        'I came across your profile on JobFinder and wanted to reach out.\n\n'
+        'Best,\n'
+        f'{sender_name}\n'
+        f'{sender_email}'
+    )
+
+
+def _build_mailto_url(recipient_email, subject, body):
+    query = urlencode({
+        'subject': subject,
+        'body': body,
+    }, quote_via=quote)
+    return f'mailto:{recipient_email}?{query}'
+
+
+def _build_webmail_draft_urls(recipient_email, subject, body):
+    gmail_query = urlencode({
+        'view': 'cm',
+        'fs': '1',
+        'to': recipient_email,
+        'su': subject,
+        'body': body,
+    }, quote_via=quote)
+    outlook_query = urlencode({
+        'to': recipient_email,
+        'subject': subject,
+        'body': body,
+    }, quote_via=quote)
+    return {
+        'gmail': f'https://mail.google.com/mail/?{gmail_query}',
+        'outlook': f'https://outlook.office.com/mail/deeplink/compose?{outlook_query}',
+    }
 
 
 def get_conversations_data(user):
@@ -134,30 +179,27 @@ def send_email_to_user(request, username):
             'no_email': True,
         })
 
-    sent = False
-    if request.method == 'POST':
-        subject = request.POST.get('subject', '').strip()
-        body = request.POST.get('body', '').strip()
-        if subject and body:
-            sender_name = request.user.get_full_name() or request.user.username
-            try:
-                email = EmailMessage(
-                    subject=subject,
-                    body=(
-                        f'{body}\n\n'
-                        f'— {sender_name}'
-                    ),
-                    from_email=f'{sender_name} <onboarding@resend.dev>',
-                    to=[job_seeker.email],
-                    reply_to=[request.user.email] if request.user.email else [],
-                )
-                email.send()
-                sent = True
-            except Exception:
-                logger.exception('Failed to send email to %s', job_seeker.email)
+    sender_name = request.user.get_full_name() or request.user.username
+    initial_subject = _default_email_subject(sender_name)
+    initial_body = _default_email_body(request.user, job_seeker)
+
+    subject = request.POST.get('subject', initial_subject).strip() if request.method == 'POST' else initial_subject
+    body = request.POST.get('body', initial_body).strip() if request.method == 'POST' else initial_body
+    if not subject:
+        subject = initial_subject
+    if not body:
+        body = initial_body
+
+    mailto_url = _build_mailto_url(job_seeker.email, subject, body)
+    webmail_urls = _build_webmail_draft_urls(job_seeker.email, subject, body)
 
     return render(request, 'messaging/send_email.html', {
         'template_data': {'title': f'Email {job_seeker.get_full_name() or job_seeker.username}'},
         'job_seeker': job_seeker,
-        'sent': sent,
+        'sender_email': request.user.email,
+        'subject': subject,
+        'body': body,
+        'mailto_url': mailto_url,
+        'gmail_url': webmail_urls['gmail'],
+        'outlook_url': webmail_urls['outlook'],
     })
