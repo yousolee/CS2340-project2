@@ -37,6 +37,11 @@
           {{ template_data.form.username.errors }}
         </div>
         <div class="mb-3">
+          <label for="{{ template_data.form.email.id_for_label }}" class="form-label fw-semibold small">Email</label>
+          {{ template_data.form.email }}
+          {{ template_data.form.email.errors }}
+        </div>
+        <div class="mb-3">
           <label for="{{ template_data.form.password1.id_for_label }}" class="form-label fw-semibold small">Password</label>
           {{ template_data.form.password1 }}
           {{ template_data.form.password1.errors }}

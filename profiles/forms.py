@@ -51,6 +51,10 @@ class BasicProfileForm(forms.ModelForm):
         max_length=30, required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'})
     )
+    email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'your@email.com'})
+    )
 
     class Meta:
         model = Profile
@@ -59,19 +63,21 @@ class BasicProfileForm(forms.ModelForm):
             "headline": BASE_PROFILE_WIDGETS["headline"],
             "location": BASE_PROFILE_WIDGETS["location"],
         }
-    
+
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if self.user:
             self.fields['first_name'].initial = self.user.first_name
             self.fields['last_name'].initial = self.user.last_name
+            self.fields['email'].initial = self.user.email
 
     def save(self, commit=True):
         profile = super().save(commit=commit)
         if self.user:
             self.user.first_name = self.cleaned_data.get('first_name', '')
             self.user.last_name = self.cleaned_data.get('last_name', '')
+            self.user.email = self.cleaned_data.get('email', '')
             self.user.save()
         return profile
 

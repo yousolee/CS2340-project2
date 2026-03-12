@@ -34,20 +34,25 @@ class CustomUserCreationForm(UserCreationForm):
     )
 
     first_name = forms.CharField(
-        max_length=30, 
-        required=True, 
+        max_length=30,
+        required=True,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
     last_name = forms.CharField(
-        max_length=30, 
-        required=True, 
+        max_length=30,
+        required=True,
         widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control'}),
     )
 
     def __init__(self, *args, **kwargs):
         super(CustomUserCreationForm, self).__init__(*args, **kwargs)
-        for fieldname in ['username', 'password1', 'password2', 'company_name', 'first_name', 'last_name']:
+        for fieldname in ['username', 'email', 'password1', 'password2', 'company_name', 'first_name', 'last_name']:
             self.fields[fieldname].help_text = None
             self.fields[fieldname].widget.attrs.update({'class': 'form-control'})
 
@@ -58,6 +63,7 @@ class CustomUserCreationForm(UserCreationForm):
         
         user.first_name = self.cleaned_data.get('first_name', '')
         user.last_name = self.cleaned_data.get('last_name', '')
+        user.email = self.cleaned_data.get('email', '')
         user.save()
 
         account_type = self.cleaned_data.get('account_type')
